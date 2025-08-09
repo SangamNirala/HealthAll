@@ -106,7 +106,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
           <FormField
             type="input"
             label="Medical/Professional License Number"
-            value={data.medical_license}
+            value={safeData.medical_license || ''}
             onChange={(value) => updateField('medical_license', value)}
             placeholder="e.g., MD123456, RD789012"
             required
