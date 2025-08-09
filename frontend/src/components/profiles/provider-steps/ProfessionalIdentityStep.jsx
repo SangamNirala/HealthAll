@@ -120,7 +120,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
               <FormField
                 type="input"
                 label="State License Number"
-                value={data.registration_numbers?.state_license}
+                value={safeData.registration_numbers?.state_license || ''}
                 onChange={(value) => updateRegistrationNumber('state_license', value)}
                 placeholder="CA-RD-12345"
                 helpText="State-specific license number if applicable"
@@ -129,7 +129,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
               <FormField
                 type="input"
                 label="National Certification Number"
-                value={data.registration_numbers?.national_cert}
+                value={safeData.registration_numbers?.national_cert || ''}
                 onChange={(value) => updateRegistrationNumber('national_cert', value)}
                 placeholder="CDR-98765"
                 helpText="National board certification number"
@@ -138,7 +138,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
               <FormField
                 type="input"
                 label="DEA Number"
-                value={data.registration_numbers?.dea_number}
+                value={safeData.registration_numbers?.dea_number || ''}
                 onChange={(value) => updateRegistrationNumber('dea_number', value)}
                 placeholder="Only if you prescribe medications"
                 helpText="Required only for prescribing practitioners"
@@ -147,7 +147,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
               <FormField
                 type="input"
                 label="NPI Number"
-                value={data.registration_numbers?.npi_number}
+                value={safeData.registration_numbers?.npi_number || ''}
                 onChange={(value) => updateRegistrationNumber('npi_number', value)}
                 placeholder="1234567890"
                 helpText="National Provider Identifier (10 digits)"
