@@ -63,7 +63,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="input"
               label="Full Name"
-              value={data.full_name}
+              value={safeData.full_name || ''}
               onChange={(value) => updateField('full_name', value)}
               placeholder="Enter your full name"
               required
@@ -72,7 +72,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="number"
               label="Age"
-              value={data.age}
+              value={safeData.age || ''}
               onChange={(value) => updateField('age', parseInt(value) || '')}
               placeholder="Enter your age"
               min="1"
@@ -83,7 +83,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="select"
               label="Gender"
-              value={data.gender}
+              value={safeData.gender || ''}
               onChange={(value) => updateField('gender', value)}
               placeholder="Select your gender"
               options={[
@@ -98,7 +98,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="input"
               label="Location"
-              value={data.location}
+              value={safeData.location || ''}
               onChange={(value) => updateField('location', value)}
               placeholder="City, State/Country"
               helpText="This helps us provide location-specific health recommendations"
@@ -107,7 +107,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="select"
               label="Timezone"
-              value={data.timezone}
+              value={safeData.timezone || ''}
               onChange={(value) => updateField('timezone', value)}
               placeholder="Select your timezone"
               options={timezoneOptions}
@@ -117,7 +117,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="select"
               label="Preferred Language"
-              value={data.preferred_language}
+              value={safeData.preferred_language || ''}
               onChange={(value) => updateField('preferred_language', value)}
               placeholder="Select your language"
               options={languageOptions}
