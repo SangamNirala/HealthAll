@@ -9,7 +9,7 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
   const [bmiInfo, setBmiInfo] = useState({ bmi: null, category: '', color: '' });
 
   const updateField = (field, value) => {
-    const updatedData = { ...data, [field]: value };
+    const updatedData = { ...safeData, [field]: value };
     
     // Auto-calculate BMI when height and weight are available
     if (field === 'height_cm' || field === 'current_weight_kg') {
@@ -28,9 +28,9 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
 
   const updateMeasurement = (measurement, value) => {
     const updatedData = {
-      ...data,
+      ...safeData,
       measurements: {
-        ...data.measurements,
+        ...safeData.measurements,
         [measurement]: value
       }
     };
