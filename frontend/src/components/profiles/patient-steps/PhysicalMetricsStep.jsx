@@ -39,17 +39,17 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
 
   // Calculate BMI category and color
   useEffect(() => {
-    if (data.bmi) {
+    if (safeData.bmi) {
       let category = '';
       let color = '';
       
-      if (data.bmi < 18.5) {
+      if (safeData.bmi < 18.5) {
         category = 'Underweight';
         color = 'text-blue-600';
-      } else if (data.bmi < 25) {
+      } else if (safeData.bmi < 25) {
         category = 'Normal weight';
         color = 'text-green-600';
-      } else if (data.bmi < 30) {
+      } else if (safeData.bmi < 30) {
         category = 'Overweight';
         color = 'text-yellow-600';
       } else {
@@ -57,9 +57,9 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
         color = 'text-red-600';
       }
       
-      setBmiInfo({ bmi: data.bmi, category, color });
+      setBmiInfo({ bmi: safeData.bmi, category, color });
     }
-  }, [data.bmi]);
+  }, [safeData.bmi]);
 
   // Unit conversion helpers
   const cmToFeetInches = (cm) => {
