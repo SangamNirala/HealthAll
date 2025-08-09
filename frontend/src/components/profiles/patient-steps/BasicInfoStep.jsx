@@ -6,15 +6,15 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
   // Ensure data is always an object, handle null/undefined
   const safeData = data || {};
   const updateField = (field, value) => {
-    const updatedData = { ...data, [field]: value };
+    const updatedData = { ...safeData, [field]: value };
     onChange(updatedData);
   };
 
   const updateNestedField = (parentField, childField, value) => {
     const updatedData = {
-      ...data,
+      ...safeData,
       [parentField]: {
-        ...data[parentField],
+        ...safeData[parentField],
         [childField]: value
       }
     };
