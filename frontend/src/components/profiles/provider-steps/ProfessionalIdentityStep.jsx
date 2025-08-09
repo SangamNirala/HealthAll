@@ -61,7 +61,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="input"
               label="Full Name"
-              value={data.full_name}
+              value={safeData.full_name || ''}
               onChange={(value) => updateField('full_name', value)}
               placeholder="Dr. Jane Smith"
               required
@@ -71,7 +71,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="select"
               label="Professional Title"
-              value={data.professional_title}
+              value={safeData.professional_title || ''}
               onChange={(value) => updateField('professional_title', value)}
               placeholder="Select your title"
               options={professionalTitles}
@@ -82,7 +82,7 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="number"
               label="Years of Experience"
-              value={data.years_experience}
+              value={safeData.years_experience || ''}
               onChange={(value) => updateField('years_experience', parseInt(value) || '')}
               placeholder="8"
               min="0"
