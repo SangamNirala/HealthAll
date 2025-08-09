@@ -119,7 +119,7 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
               <FormField
                 type="number"
                 label="Current Weight (kg)"
-                value={data.current_weight_kg}
+                value={safeData.current_weight_kg || ''}
                 onChange={(value) => updateField('current_weight_kg', parseFloat(value) || '')}
                 placeholder="70"
                 step="0.1"
@@ -127,9 +127,9 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
                 max="300"
                 required
               />
-              {data.current_weight_kg && (
+              {safeData.current_weight_kg && (
                 <p className="text-sm text-gray-500 mt-1">
-                  {kgToLbs(data.current_weight_kg)}
+                  {kgToLbs(safeData.current_weight_kg)}
                 </p>
               )}
             </div>
