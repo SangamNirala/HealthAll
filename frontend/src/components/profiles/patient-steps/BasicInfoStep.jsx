@@ -170,7 +170,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="input"
               label="Emergency Contact Name"
-              value={data.emergency_contact?.name}
+              value={safeData.emergency_contact?.name || ''}
               onChange={(value) => updateNestedField('emergency_contact', 'name', value)}
               placeholder="Full name"
             />
@@ -178,7 +178,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="tel"
               label="Emergency Contact Phone"
-              value={data.emergency_contact?.phone}
+              value={safeData.emergency_contact?.phone || ''}
               onChange={(value) => updateNestedField('emergency_contact', 'phone', value)}
               placeholder="+1-555-123-4567"
             />
@@ -186,7 +186,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="input"
               label="Relationship"
-              value={data.emergency_contact?.relationship}
+              value={safeData.emergency_contact?.relationship || ''}
               onChange={(value) => updateNestedField('emergency_contact', 'relationship', value)}
               placeholder="Spouse, Parent, Sibling, etc."
             />
@@ -194,7 +194,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="email"
               label="Emergency Contact Email"
-              value={data.emergency_contact?.email}
+              value={safeData.emergency_contact?.email || ''}
               onChange={(value) => updateNestedField('emergency_contact', 'email', value)}
               placeholder="emergency@example.com"
             />
