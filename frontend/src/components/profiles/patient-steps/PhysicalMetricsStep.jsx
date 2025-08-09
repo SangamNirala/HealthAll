@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import FormField from '../../shared/FormField';
 import { Calculator, TrendingUp } from 'lucide-react';
 
-const PhysicalMetricsStep = ({ data = {}, onChange, icon: Icon }) => {
+const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
+  // Ensure data is always an object, handle null/undefined
+  const safeData = data || {};
   const [bmiInfo, setBmiInfo] = useState({ bmi: null, category: '', color: '' });
 
   const updateField = (field, value) => {
