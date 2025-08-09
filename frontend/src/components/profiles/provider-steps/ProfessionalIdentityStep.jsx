@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import FormField from '../../shared/FormField';
 import { User, Award, Shield } from 'lucide-react';
 
-const ProfessionalIdentityStep = ({ data = {}, onChange, icon: Icon }) => {
+const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
+  // Ensure data is always an object, handle null/undefined
+  const safeData = data || {};
   const updateField = (field, value) => {
     const updatedData = { ...data, [field]: value };
     onChange(updatedData);
