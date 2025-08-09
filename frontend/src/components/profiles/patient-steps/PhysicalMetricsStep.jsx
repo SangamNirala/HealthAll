@@ -184,7 +184,7 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="number"
               label="Body Fat Percentage (%)"
-              value={data.body_fat_percentage}
+              value={safeData.body_fat_percentage || ''}
               onChange={(value) => updateField('body_fat_percentage', parseFloat(value) || '')}
               placeholder="15"
               step="0.1"
@@ -196,7 +196,7 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="number"
               label="Muscle Mass (kg)"
-              value={data.muscle_mass_kg}
+              value={safeData.muscle_mass_kg || ''}
               onChange={(value) => updateField('muscle_mass_kg', parseFloat(value) || '')}
               placeholder="25"
               step="0.1"
