@@ -136,7 +136,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="checkbox"
               label="Email notifications"
-              value={data.contact_preferences?.email}
+              value={safeData.contact_preferences?.email || false}
               onChange={(value) => updateNestedField('contact_preferences', 'email', value)}
               helpText="Receive health tips, reminders, and updates via email"
             />
@@ -144,7 +144,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="checkbox"
               label="SMS notifications"
-              value={data.contact_preferences?.sms}
+              value={safeData.contact_preferences?.sms || false}
               onChange={(value) => updateNestedField('contact_preferences', 'sms', value)}
               helpText="Get reminders and alerts via text messages"
             />
@@ -152,7 +152,7 @@ const BasicInfoStep = ({ data, onChange, icon: Icon }) => {
             <FormField
               type="checkbox"
               label="Push notifications"
-              value={data.contact_preferences?.push}
+              value={safeData.contact_preferences?.push || false}
               onChange={(value) => updateNestedField('contact_preferences', 'push', value)}
               helpText="Receive notifications through the mobile app"
             />
