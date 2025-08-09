@@ -7,15 +7,15 @@ const ProfessionalIdentityStep = ({ data, onChange, icon: Icon }) => {
   // Ensure data is always an object, handle null/undefined
   const safeData = data || {};
   const updateField = (field, value) => {
-    const updatedData = { ...data, [field]: value };
+    const updatedData = { ...safeData, [field]: value };
     onChange(updatedData);
   };
 
   const updateRegistrationNumber = (type, value) => {
     const updatedData = {
-      ...data,
+      ...safeData,
       registration_numbers: {
-        ...data.registration_numbers,
+        ...safeData.registration_numbers,
         [type]: value
       }
     };
