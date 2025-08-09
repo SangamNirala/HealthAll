@@ -100,7 +100,7 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
               <FormField
                 type="number"
                 label="Height (cm)"
-                value={data.height_cm}
+                value={safeData.height_cm || ''}
                 onChange={(value) => updateField('height_cm', parseFloat(value) || '')}
                 placeholder="170"
                 step="0.1"
@@ -108,9 +108,9 @@ const PhysicalMetricsStep = ({ data, onChange, icon: Icon }) => {
                 max="250"
                 required
               />
-              {data.height_cm && (
+              {safeData.height_cm && (
                 <p className="text-sm text-gray-500 mt-1">
-                  {cmToFeetInches(data.height_cm)}
+                  {cmToFeetInches(safeData.height_cm)}
                 </p>
               )}
             </div>
