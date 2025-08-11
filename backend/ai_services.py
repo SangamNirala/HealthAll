@@ -158,7 +158,7 @@ class AIServiceManager:
                         self.gemini_rotator.rotate_key()
                         self._initialize_gemini_client()
                         
-                        if attempt &lt; max_retries - 1:
+                        if attempt < max_retries - 1:
                             logger.info(f"Retrying with next Gemini API key (attempt {attempt + 1}/{max_retries})")
                             continue
                 
