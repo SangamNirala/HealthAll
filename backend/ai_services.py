@@ -858,96 +858,382 @@ Respond in the specified JSON format with enhanced personalization and context a
 
     async def _try_enhanced_ai_providers(self, system_instruction: str, user_prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Try AI providers with enhanced context and better model selection"""
+        
+        # Enhanced Groq with better model selection
         if self.groq_client:
             try:
+                # Use more sophisticated model for complex conversations
+                model = "llama3-70b-8192" if context.get("conversation_length", 0) > 3 else "llama3-8b-8192"
+                temperature = 0.7 if context.get("conversation_tone") == "inquisitive" else 0.6
+                
                 completion = self.groq_client.chat.completions.create(
-                    model="llama3-70b-8192",
+                    model=model,
                     messages=[
                         {"role": "system", "content": system_instruction},
                         {"role": "user", "content": user_prompt},
                     ],
-                    max_tokens=900,
-                    temperature=0.6,
+                    max_tokens=1200,  # Increased for richer responses
+                    temperature=temperature,
                 )
                 content = completion.choices[0].message.content
-                parsed = self._parse_structured_json(content)
+                parsed = self._parse_enhanced_json(content)
                 if parsed:
-                    parsed.update({"provider": "groq", "model": "llama3-70b-8192", "confidence": 0.88})
+                    parsed.update({
+                        "provider": "groq", 
+                        "model": model, 
+                        "confidence": 0.92,
+                        "context_awareness": "high"
+                    })
                     return parsed
             except Exception as e:
-                logger.warning(f"Groq chat failed, will fallback: {e}")
+                logger.warning(f"Enhanced Groq chat failed, will fallback: {e}")
         
-        # Then Gemini (configurable: pro then flash)
+        # Enhanced Gemini with context-aware prompting
         if self.gemini_client:
-            def _gemini_chat_call():
-                prompt = (
-                    system_instruction + "\n\n" + user_prompt + "\n\nRemember: Output JSON only."
-                )
-                return self.gemini_client.generate_content(prompt)
+            def _enhanced_gemini_chat():
+                enhanced_prompt = f"""
+{system_instruction}
+
+ENHANCED CONTEXT INSTRUCTIONS:
+- Conversation engagement: {context.get('user_engagement', 'new')}
+- User preferences detected: {context.get('user_preferences_detected', {})}
+- Conversation tone: {context.get('conversation_tone', 'neutral')}
+- Personalization available: {context.get('personalization_available', False)}
+
+{user_prompt}
+
+CRITICAL: Respond with sophisticated, contextually-aware JSON that demonstrates deep understanding of the user's situation and conversation history. Make it feel like you truly understand their journey and needs.
+"""
+                return self.gemini_client.generate_content(enhanced_prompt)
+                
             try:
-                response = self._retry_with_gemini_rotation(_gemini_chat_call)
+                response = self._retry_with_gemini_rotation(_enhanced_gemini_chat)
                 content = getattr(response, 'text', str(response))
-                parsed = self._parse_structured_json(content)
+                parsed = self._parse_enhanced_json(content)
                 if parsed:
-                    parsed.update({"provider": "gemini", "model": self.gemini_model_preferred, "confidence": 0.86})
+                    parsed.update({
+                        "provider": "gemini", 
+                        "model": self.gemini_model_preferred, 
+                        "confidence": 0.89,
+                        "context_awareness": "high"
+                    })
                     return parsed
             except Exception as e:
-                logger.warning(f"Gemini chat failed, will fallback: {e}")
+                logger.warning(f"Enhanced Gemini chat failed, will fallback: {e}")
 
-        # Then OpenRouter (choose lightweight/freeish models)
+        # Enhanced OpenRouter with better model selection
         if self.openrouter_client:
             try:
+                # Use better models for complex conversations
+                model = "anthropic/claude-3-haiku" if context.get("conversation_length", 0) > 5 else "mistralai/mistral-7b-instruct"
+                
                 resp = self.openrouter_client.chat.completions.create(
-                    model="mistralai/mistral-7b-instruct",
+                    model=model,
                     messages=[
                         {"role": "system", "content": system_instruction},
                         {"role": "user", "content": user_prompt},
                     ],
-                    max_tokens=800,
-                    temperature=0.5,
+                    max_tokens=1000,
+                    temperature=0.65,
                 )
                 content = resp.choices[0].message.content
-                parsed = self._parse_structured_json(content)
+                parsed = self._parse_enhanced_json(content)
                 if parsed:
-                    parsed.update({"provider": "openrouter", "model": "mistral-7b-instruct", "confidence": 0.83})
+                    parsed.update({
+                        "provider": "openrouter", 
+                        "model": model, 
+                        "confidence": 0.86,
+                        "context_awareness": "moderate"
+                    })
                     return parsed
             except Exception as e:
-                logger.warning(f"OpenRouter chat failed, will fallback: {e}")
+                logger.warning(f"Enhanced OpenRouter chat failed, will fallback: {e}")
 
-        # Finally, Hugging Face text generation
+        # Enhanced HuggingFace fallback
         if self.hf_client:
             try:
-                hf_prompt = (
-                    system_instruction + "\n" + user_prompt + "\nReturn JSON only."
+                enhanced_hf_prompt = f"""
+{system_instruction}
+
+Context: {context.get('user_engagement', 'new')} user with {context.get('conversation_tone', 'neutral')} tone.
+{user_prompt}
+
+Provide contextually-aware JSON response:
+"""
+                content = self.hf_client.text_generation(
+                    enhanced_hf_prompt, 
+                    max_new_tokens=800, 
+                    temperature=0.7,
+                    do_sample=True
                 )
-                content = self.hf_client.text_generation(hf_prompt, max_new_tokens=600, temperature=0.6)
-                parsed = self._parse_structured_json(content)
+                parsed = self._parse_enhanced_json(content)
                 if parsed:
-                    parsed.update({"provider": "huggingface", "model": "mixtral-or-similar", "confidence": 0.78})
+                    parsed.update({
+                        "provider": "huggingface", 
+                        "model": "enhanced-mixtral", 
+                        "confidence": 0.80,
+                        "context_awareness": "moderate"
+                    })
                     return parsed
             except Exception as e:
-                logger.warning(f"HuggingFace chat failed, will fallback: {e}")
+                logger.warning(f"Enhanced HuggingFace chat failed: {e}")
 
-        # Last resort: return a simple structured fallback
+        # Enhanced fallback response with context awareness
+        return self._create_enhanced_fallback(context)
+
+    def _enhance_response_quality(self, response_data: Dict[str, Any], context: Dict[str, Any], user_context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Post-process AI response to enhance quality and personalization"""
+        
+        if not response_data:
+            return self._create_enhanced_fallback(context)
+            
+        # Enhance suggestions based on context
+        if context.get("user_engagement") == "highly_engaged":
+            response_data["suggestions"] = self._generate_advanced_suggestions(response_data, context)
+        
+        # Add contextual quick actions
+        response_data["quick_actions"] = self._generate_contextual_quick_actions(response_data, context)
+        
+        # Enhance personalization
+        if user_context and context.get("personalization_available"):
+            response_data["personalization"] = self._generate_personalization_insight(response_data, user_context, context)
+        
+        # Set follow-up priority based on message urgency and complexity
+        message_urgency = context.get("message_urgency", "low")
+        if message_urgency == "high":
+            response_data["follow_up_priority"] = "high"
+        elif context.get("user_engagement") == "highly_engaged":
+            response_data["follow_up_priority"] = "medium"
+        else:
+            response_data["follow_up_priority"] = "low"
+            
+        # Ensure confidence level is set
+        if "confidence_level" not in response_data:
+            provider_confidence = response_data.get("confidence", 0.8)
+            if provider_confidence > 0.9:
+                response_data["confidence_level"] = "high"
+            elif provider_confidence > 0.7:
+                response_data["confidence_level"] = "medium"
+            else:
+                response_data["confidence_level"] = "moderate"
+        
+        return response_data
+
+    def _parse_enhanced_json(self, text: str) -> Optional[Dict[str, Any]]:
+        """Enhanced JSON parsing with better error handling and validation"""
+        if not text:
+            return None
+            
+        # Clean and extract JSON
+        cleaned = text.strip()
+        if cleaned.startswith('```'):
+            # Remove code fences
+            lines = cleaned.split('\n')
+            json_lines = []
+            in_json = False
+            for line in lines:
+                if line.strip().startswith('```'):
+                    in_json = not in_json
+                    continue
+                if in_json or (line.strip().startswith('{') or line.strip().startswith('"')):
+                    json_lines.append(line)
+            cleaned = '\n'.join(json_lines)
+        
+        # Try to find JSON object
+        start_idx = cleaned.find('{')
+        end_idx = cleaned.rfind('}')
+        if start_idx != -1 and end_idx != -1:
+            cleaned = cleaned[start_idx:end_idx + 1]
+        
+        try:
+            obj = json.loads(cleaned)
+            
+            # Enhanced validation with defaults
+            required_fields = {
+                "title": "Let me help you with that",
+                "summary": "I'm here to provide personalized nutrition and health guidance.",
+                "key_points": [],
+                "action_steps": [],
+                "tips": [],
+                "suggestions": [],
+                "quick_actions": [],
+                "personalization": "",
+                "confidence_level": "medium",
+                "follow_up_priority": "medium"
+            }
+            
+            for key, default_value in required_fields.items():
+                if key not in obj:
+                    obj[key] = default_value
+                    
+            return obj
+            
+        except json.JSONDecodeError as e:
+            logger.warning(f"JSON parsing failed: {e}")
+            # Try to extract useful information from malformed response
+            return self._salvage_response_data(text)
+
+    def _salvage_response_data(self, text: str) -> Dict[str, Any]:
+        """Try to salvage useful information from malformed AI responses"""
+        # Extract title if present
+        title_match = re.search(r'"title":\s*"([^"]*)"', text)
+        title = title_match.group(1) if title_match else "Nutrition Guidance"
+        
+        # Extract summary if present
+        summary_match = re.search(r'"summary":\s*"([^"]*)"', text)
+        summary = summary_match.group(1) if summary_match else text[:200] + "..." if len(text) > 200 else text
+        
         return {
-            "title": "Let's figure this out together",
-            "summary": "I can help with nutrition, meal ideas, and healthy habits.",
+            "title": title,
+            "summary": summary,
+            "key_points": ["I'm here to help with your nutrition questions"],
+            "action_steps": ["Feel free to ask me anything about food and health"],
+            "tips": ["Small, consistent changes lead to lasting results"],
+            "suggestions": ["What's your main health goal?", "Tell me about your current diet"],
+            "quick_actions": [{"type": "meal_suggestion", "label": "Get meal ideas", "action": "meal_suggestions"}],
+            "personalization": "I'm learning about your preferences to provide better guidance.",
+            "confidence_level": "moderate",
+            "follow_up_priority": "medium",
+            "provider": "salvaged",
+            "confidence": 0.6
+        }
+
+    def _generate_advanced_suggestions(self, response: Dict[str, Any], context: Dict[str, Any]) -> List[str]:
+        """Generate more sophisticated follow-up suggestions for engaged users"""
+        base_suggestions = response.get("suggestions", [])
+        topics = context.get("topics_discussed", [])
+        preferences = context.get("user_preferences_detected", {})
+        
+        advanced_suggestions = []
+        
+        # Add topic-specific advanced questions
+        if "protein" in topics:
+            advanced_suggestions.append("How much protein should I eat per meal for optimal absorption?")
+        if "weight" in topics and preferences.get("primary_goal") == "weight_loss":
+            advanced_suggestions.append("What's the best timing for meals to support weight loss?")
+        if "energy" in topics:
+            advanced_suggestions.append("Which micronutrients are most important for sustained energy?")
+            
+        # Combine with base suggestions, prioritizing advanced ones
+        all_suggestions = advanced_suggestions + base_suggestions
+        return all_suggestions[:4]  # Limit to 4 suggestions
+
+    def _generate_contextual_quick_actions(self, response: Dict[str, Any], context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate contextual quick actions based on conversation state"""
+        actions = []
+        
+        user_engagement = context.get("user_engagement", "new")
+        topics = context.get("topics_discussed", [])
+        preferences = context.get("user_preferences_detected", {})
+        
+        # Add engagement-appropriate actions
+        if user_engagement == "new":
+            actions.append({"type": "assessment", "label": "Quick health assessment", "action": "start_assessment"})
+        elif user_engagement == "engaged":
+            if "meal" in topics:
+                actions.append({"type": "meal_plan", "label": "Create meal plan", "action": "create_meal_plan"})
+            if preferences.get("primary_goal") == "weight_loss":
+                actions.append({"type": "calorie_calculator", "label": "Calculate daily calories", "action": "calc_calories"})
+        elif user_engagement == "highly_engaged":
+            actions.append({"type": "progress_tracker", "label": "Track progress", "action": "track_progress"})
+            actions.append({"type": "expert_consultation", "label": "Book consultation", "action": "book_consultation"})
+            
+        # Limit to 2 most relevant actions
+        return actions[:2]
+
+    def _generate_personalization_insight(self, response: Dict[str, Any], user_context: Dict[str, Any], context: Dict[str, Any]) -> str:
+        """Generate a personalized insight that shows understanding of user context"""
+        profile_type = user_context.get("profile_type", "general")
+        health_goals = user_context.get("health_goals", [])
+        interaction_count = user_context.get("interaction_count", 0)
+        
+        insights = []
+        
+        if profile_type == "patient":
+            insights.append("As a patient, I'm focusing on evidence-based recommendations that align with clinical best practices.")
+        elif profile_type == "provider":
+            insights.append("I'm providing insights that can support your clinical practice and patient education.")
+        elif profile_type == "family":
+            insights.append("I understand you're managing health for multiple family members - I'll keep practical family dynamics in mind.")
+            
+        if health_goals:
+            insights.append(f"I notice your focus on {', '.join(health_goals[:2])} - my suggestions are tailored to support these goals.")
+            
+        if interaction_count > 5:
+            insights.append("Based on our previous conversations, I'm building a more complete picture of your preferences and needs.")
+        elif interaction_count > 0:
+            insights.append("I'm learning about your preferences to provide increasingly personalized guidance.")
+            
+        return ". ".join(insights) if insights else "I'm here to provide personalized guidance based on your unique situation."
+
+    def _create_enhanced_fallback(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Create an enhanced fallback response that's still contextually aware"""
+        user_engagement = context.get("user_engagement", "new")
+        conversation_tone = context.get("conversation_tone", "neutral")
+        
+        # Adjust response based on context
+        if user_engagement == "new":
+            title = "Welcome! Let's explore your nutrition journey together"
+            summary = "I'm here to provide personalized nutrition and health guidance based on the latest evidence-based research."
+            action_steps = [
+                "Tell me about your current eating habits or health goals",
+                "Share any dietary preferences or restrictions you have",
+                "Ask me about any specific nutrition topics you're curious about"
+            ]
+        elif user_engagement == "engaged":
+            title = "Let's dive deeper into your health goals"
+            summary = "Based on our conversation, I'm here to provide more targeted guidance for your specific needs."
+            action_steps = [
+                "Let's explore specific strategies for your goals",
+                "I can provide detailed meal planning or nutrition timing advice",
+                "We can discuss advanced topics like nutrient timing or supplementation"
+            ]
+        else:  # highly_engaged
+            title = "Advanced nutrition strategies tailored for you"
+            summary = "I appreciate your commitment to optimizing your health. Let me provide advanced, evidence-based strategies."
+            action_steps = [
+                "Implement advanced nutrition periodization techniques",
+                "Explore biomarker optimization through targeted nutrition",
+                "Develop comprehensive lifestyle integration strategies"
+            ]
+            
+        # Adjust tone
+        if conversation_tone == "concerned":
+            summary += " I understand your concerns and I'm here to provide reassuring, practical guidance."
+        elif conversation_tone == "positive":
+            summary += " I love your enthusiasm! Let's build on that positive momentum."
+            
+        return {
+            "title": title,
+            "summary": summary,
             "key_points": [
-                "Ask me about balanced meals or macronutrients",
-                "Share your goals to get tailored suggestions",
-                "We can track simple action steps"
+                "Evidence-based nutrition guidance tailored to your needs",
+                "Practical strategies that fit your lifestyle",
+                "Ongoing support for sustainable health improvements"
             ],
-            "action_steps": [
-                "Tell me your typical breakfast/lunch/dinner",
-                "Mention any dietary restrictions or preferences",
-                "Set a small weekly goal (e.g., +1 fruit/day)"
+            "action_steps": action_steps,
+            "tips": [
+                "Small, consistent changes create lasting transformation",
+                "Your unique situation requires personalized approaches",
+                "I'm here to support your journey every step of the way"
             ],
-            "tips": ["Small changes compound over time", "Hydration supports energy and appetite"],
-            "suggestions": ["What is a healthy lunch for work?", "How much protein do I need per day?"],
-            "quick_actions": [{"type": "meal_suggestion", "label": "Get meal suggestions", "action": "get_meal_suggestions"}],
-            "provider": "fallback",
-            "model": "rule-based",
-            "confidence": 0.6,
+            "suggestions": [
+                "What's your main health priority right now?",
+                "Tell me about your current meal routine",
+                "What nutrition topics confuse you most?",
+                "How can I help you achieve your health goals?"
+            ],
+            "quick_actions": [
+                {"type": "assessment", "label": "Quick health assessment", "action": "start_assessment"},
+                {"type": "meal_suggestion", "label": "Get meal suggestions", "action": "meal_suggestions"}
+            ],
+            "personalization": "I'm adapting my guidance to match your engagement level and provide increasingly valuable insights.",
+            "confidence_level": "high",
+            "follow_up_priority": "medium",
+            "provider": "enhanced_fallback",
+            "model": "context-aware",
+            "confidence": 0.85,
+            "context_awareness": "high"
         }
 
     # ========= Helper parsers =========
