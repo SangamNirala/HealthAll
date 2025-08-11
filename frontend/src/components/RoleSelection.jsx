@@ -169,6 +169,21 @@ const RoleCard = ({ role, index }) => {
               )}
             </div>
           </Button>
+          
+          {/* Quick Chat Button for Guest Mode */}
+          {role.type === 'guest' && (
+            <Button 
+              onClick={handleQuickChatClick}
+              variant="outline"
+              className="w-full border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 py-3 px-6 text-sm font-semibold group"
+            >
+              <div className="flex items-center justify-center w-full">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                <span>Quick Chat</span>
+                <Sparkles className="w-4 h-4 ml-2 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+            </Button>
+          )}
         </div>
         
         {role.type !== 'guest' && (
