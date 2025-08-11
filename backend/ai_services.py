@@ -72,7 +72,7 @@ class GeminiAPIRotator:
         
     def rotate_key(self):
         """Rotate to next API key"""
-        if len(self.api_keys) &gt; 1:
+        if len(self.api_keys) > 1:
             self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
             logger.info(f"Rotated to Gemini API key index: {self.current_key_index}")
 
