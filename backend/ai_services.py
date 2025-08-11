@@ -58,7 +58,7 @@ class GeminiAPIRotator:
             attempts += 1
         
         # If all keys failed, reset and try again
-        if len(self.failed_keys) &gt;= len(self.api_keys):
+        if len(self.failed_keys) >= len(self.api_keys):
             logger.warning("All Gemini API keys failed. Resetting failed keys list.")
             self.failed_keys.clear()
             return self.api_keys[0] if self.api_keys else None
