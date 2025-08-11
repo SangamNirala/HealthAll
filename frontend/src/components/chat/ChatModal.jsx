@@ -54,12 +54,19 @@ const ChatModal = ({ isOpen, onClose }) => {
         const res = await fetch(`${backendUrl}/api/chat/start-session`, { method: 'POST' });
         const data = await res.json();
         setSessionId(data.session_id);
+        const contextualWelcome = userContext.profile_type && userContext.profile_type !== 'general' 
+          ? `Hi! I'm your enhanced AI nutrition assistant, specialized for ${userContext.profile_type} needs. I have advanced context awareness and can provide personalized guidance based on your unique situation. What would you like to explore today?`
+          : data.welcome_message || "Hi! I'm your enhanced AI nutrition assistant with advanced context awareness. I can provide highly personalized guidance for food, health, and nutrition. What would you like to know?";
+          
         setMessages([
           {
             id: Date.now(),
             type: 'bot',
-            content: data.welcome_message || "Hi! I'm your AI nutrition assistant. I can help you with food questions, health tips, and recommendations. What would you like to know?",
+            content: contextualWelcome,
             timestamp: new Date(),
+            title: "Welcome to Enhanced AI Nutrition Chat",
+            summary: contextualWelcome,
+            personalization: userContext.profile_type ? `I'm configured for ${userContext.profile_type} users and will provide contextually relevant guidance.` : "I'm learning about you to provide increasingly personalized advice.",
           },
         ]);
       } catch (e) {
