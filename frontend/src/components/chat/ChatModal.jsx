@@ -339,14 +339,20 @@ const ChatModal = ({ isOpen, onClose }) => {
               </div>
             ))}
 
-            {/* Loading indicator */}
-            {isLoading && (
+            {/* Enhanced loading indicator with typing animation */}
+            {(isLoading || isTyping) && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 px-4 py-2 rounded-lg">
+                <div className="bg-gray-100 px-4 py-3 rounded-lg max-w-[80%]">
                   <div className="flex items-center space-x-2">
                     <Bot className="w-4 h-4 text-purple-600" />
-                    <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
-                    <span className="text-sm text-gray-600">Thinking...</span>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {isTyping ? 'Thinking deeply about your question...' : 'Processing...'}
+                    </span>
                   </div>
                 </div>
               </div>
