@@ -38,6 +38,10 @@ const ChatModal = ({ isOpen, onClose }) => {
     localStorage.setItem('chat_interaction_count', newCount.toString());
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
