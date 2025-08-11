@@ -7108,6 +7108,11 @@ class HealthPlatformAPITester:
         print(f"🌐 Base URL: {self.base_url}")
         print("=" * 60)
 
+        # Test Enhanced Chat Model System tests (NEW - PRIORITY TEST)
+        print("\n📋 Testing Enhanced Chat Model System (PRIORITY)...")
+        chat_api_success = self.test_enhanced_chat_api_endpoints()
+        ai_service_success = self.test_ai_service_integration()
+        
         # Test basic API
         print("\n📋 Testing Basic API...")
         self.test_basic_api()
@@ -7197,6 +7202,8 @@ class HealthPlatformAPITester:
         
         # Highlight the priority test results
         print(f"\n🎯 PRIORITY TEST RESULTS:")
+        print(f"   Enhanced Chat API Endpoints: {'✅ PASSED' if chat_api_success else '❌ FAILED'}")
+        print(f"   AI Service Integration: {'✅ PASSED' if ai_service_success else '❌ FAILED'}")
         print(f"   AI API Endpoints: {'✅ PASSED' if ai_success else '❌ FAILED'}")
         print(f"   Chat API Endpoints: {'✅ PASSED' if chat_success else '❌ FAILED'}")
         print(f"   Phase 3 AI Integration - PersonalInsights: {'✅ PASSED' if phase3_ai_success else '❌ FAILED'}")
