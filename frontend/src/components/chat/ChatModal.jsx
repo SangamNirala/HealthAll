@@ -89,12 +89,21 @@ const ChatModal = ({ isOpen, onClose }) => {
     }
 
     return (
-      <div className="space-y-2">
-        {msg.title && <div className="font-semibold text-sm text-purple-700">{msg.title}</div>}
-        {msg.summary && <div className="text-sm text-gray-800">{msg.summary}</div>}
+      <div className="space-y-3">
+        {msg.title && (
+          <div className="font-semibold text-sm text-purple-700 flex items-center">
+            <Brain className="w-4 h-4 mr-2" />
+            {msg.title}
+          </div>
+        )}
+        {msg.summary && <div className="text-sm text-gray-800 leading-relaxed">{msg.summary}</div>}
+        
         {msg.keyPoints?.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-gray-700 mb-1">Key points</div>
+            <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+              <Target className="w-3 h-3 mr-1" />
+              Key Insights
+            </div>
             <ul className="list-disc ml-5 space-y-1">
               {msg.keyPoints.map((kp, idx) => (
                 <li key={idx} className="text-sm text-gray-800">{kp}</li>
@@ -102,10 +111,14 @@ const ChatModal = ({ isOpen, onClose }) => {
             </ul>
           </div>
         )}
+        
         {msg.actionSteps?.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-gray-700 mb-1">Action steps</div>
-            <ul className="ml-1 space-y-1">
+            <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+              <Zap className="w-3 h-3 mr-1" />
+              Action Steps
+            </div>
+            <ul className="ml-1 space-y-2">
               {msg.actionSteps.map((step, idx) => (
                 <li key={idx} className="flex items-start text-sm text-gray-800">
                   <CheckCircle2 className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
@@ -115,14 +128,28 @@ const ChatModal = ({ isOpen, onClose }) => {
             </ul>
           </div>
         )}
+        
         {msg.tips?.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-700 mb-1">Tips</div>
-            <ul className="list-disc ml-5 space-y-1">
+          <div className="bg-purple-50 p-3 rounded-lg">
+            <div className="text-xs font-medium text-purple-700 mb-2 flex items-center">
+              <Lightbulb className="w-3 h-3 mr-1" />
+              Pro Tips
+            </div>
+            <ul className="space-y-1">
               {msg.tips.map((tip, idx) => (
-                <li key={idx} className="text-sm text-gray-800">{tip}</li>
+                <li key={idx} className="text-sm text-purple-800 flex items-start">
+                  <span className="text-purple-400 mr-2">•</span>
+                  <span>{tip}</span>
+                </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {msg.personalization && (
+          <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+            <div className="text-xs font-medium text-blue-700 mb-1">Personalized for you</div>
+            <div className="text-sm text-blue-800">{msg.personalization}</div>
           </div>
         )}
       </div>
