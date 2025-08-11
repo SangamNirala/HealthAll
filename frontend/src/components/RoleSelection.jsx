@@ -77,6 +77,7 @@ const roleOptions = [
 
 const RoleCard = ({ role, index }) => {
   const navigate = useNavigate();
+  const [showQuickChat, setShowQuickChat] = useState(false);
   const IconComponent = role.icon;
 
   const handleDashboardClick = () => {
@@ -94,6 +95,10 @@ const RoleCard = ({ role, index }) => {
       // For guest, go to guest setup first
       navigate('/guest-setup');
     }
+  };
+
+  const handleQuickChatClick = () => {
+    setShowQuickChat(true);
   };
 
   return (
