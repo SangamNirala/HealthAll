@@ -117,12 +117,22 @@ async def send_chat_message(request: ChatMessageRequest):
         refreshed_session = await db.chat_sessions.find_one({"session_id": request.session_id})
         recent_messages = (refreshed_session or {}).get("messages", [])[-10:]
         
-        # Use AI Service Manager to generate a structured response with provider fallbacks
+        # Use AI Service Manager to generate a structured response with enhanced context awareness
         ai_service = AIServiceManager()
+        
+        # Build user context from request and stored data
+        user_context = request.user_context.copy() if request.user_context else {}
+        user_context.update({
+            "session_id": request.session_id,
+            "interaction_count": len(recent_messages) // 2,  # Approximate user message count
+            "context_type": request.context_type
+        })
+        
         structured = await ai_service.generate_chat_response(
             message=request.message,
             history=recent_messages,
             context_type=request.context_type,
+            user_context=user_context
         )
 
         # Build plain text response for backward compatibility
