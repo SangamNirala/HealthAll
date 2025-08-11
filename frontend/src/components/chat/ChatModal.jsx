@@ -237,11 +237,38 @@ const ChatModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const quickQuestions = [
-    { icon: Pizza, text: "What's a healthy breakfast?", question: "What would you recommend for a healthy breakfast?" },
-    { icon: Heart, text: 'Tips for better nutrition', question: 'Can you give me some tips for better nutrition?' },
-    { icon: Lightbulb, text: 'How many calories do I need?', question: 'How do I calculate how many calories I need per day?' },
-  ];
+  const getContextualQuickQuestions = () => {
+    const baseQuestions = [
+      { icon: Pizza, text: "What's a healthy breakfast?", question: "What would you recommend for a healthy breakfast?" },
+      { icon: Heart, text: 'Tips for better nutrition', question: 'Can you give me some tips for better nutrition?' },
+      { icon: Lightbulb, text: 'How many calories do I need?', question: 'How do I calculate how many calories I need per day?' },
+    ];
+
+    // Contextual questions based on user profile
+    if (userContext.profile_type === 'patient') {
+      return [
+        { icon: Target, text: "Clinical nutrition guidance", question: "What nutrition advice aligns with my health conditions?" },
+        { icon: Heart, text: "Heart-healthy eating", question: "How can I eat for better heart health?" },
+        { icon: Brain, text: "Medication and food interactions", question: "Are there foods I should avoid with my medications?" },
+      ];
+    } else if (userContext.profile_type === 'family') {
+      return [
+        { icon: Pizza, text: "Family meal planning", question: "How can I plan healthy meals for the whole family?" },
+        { icon: Heart, text: "Kids' nutrition tips", question: "What are the best nutrition practices for children?" },
+        { icon: Target, text: "Budget-friendly healthy eating", question: "How can we eat healthy on a budget?" },
+      ];
+    } else if (userContext.health_goals?.includes('weight_loss')) {
+      return [
+        { icon: Target, text: "Weight loss strategies", question: "What are the most effective strategies for sustainable weight loss?" },
+        { icon: Zap, text: "Metabolism boosting foods", question: "Which foods can help boost my metabolism?" },
+        { icon: Heart, text: "Portion control tips", question: "How can I better control my portion sizes?" },
+      ];
+    }
+
+    return baseQuestions;
+  };
+
+  const quickQuestions = getContextualQuickQuestions();
 
   const handleQuickQuestion = (question) => {
     setInputMessage(question);
