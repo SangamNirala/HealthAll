@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { ArrowRight, User, Stethoscope, Users, UserCheck } from 'lucide-react';
+import { ArrowRight, User, Stethoscope, Users, UserCheck, MessageCircle, Sparkles } from 'lucide-react';
 
 const roleOptions = [
   {
