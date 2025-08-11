@@ -1,83 +1,162 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Bot, User, Sparkles, Pizza, Heart, Lightbulb } from 'lucide-react';
+import { X, Send, Loader2, Bot, User, Sparkles, Pizza, Heart, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 const ChatModal = ({ isOpen, onClose }) => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'bot',
-      content: "Hi! I'm your AI nutrition assistant. I can help you with food questions, health tips, and recommendations. What would you like to know?",
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => 'session_' + Date.now());
+  const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
 
+  const backendUrl = process.env.REACT_APP_BACKEND_URL; // must use env only
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // Start session on open
+  useEffect(() => {
+    const startSession = async () => {
+      if (!isOpen) return;
+      try {
+        const res = await fetch(`${backendUrl}/api/chat/start-session`, { method: 'POST' });
+        const data = await res.json();
+        setSessionId(data.session_id);
+        setMessages([
+          {
+            id: Date.now(),
+            type: 'bot',
+            content: data.welcome_message || "Hi! I'm your AI nutrition assistant. I can help you with food questions, health tips, and recommendations. What would you like to know?",
+            timestamp: new Date(),
+          },
+        ]);
+      } catch (e) {
+        // If session creation fails, still allow chat but show error
+        setMessages([
+          {
+            id: Date.now(),
+            type: 'bot',
+            content: "Welcome! You can ask me about nutrition, meals, and healthy habits.",
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    };
+    if (isOpen && !sessionId) {
+      startSession();
+    }
+  }, [isOpen, backendUrl, sessionId]);
+
+  const renderFormatted = (msg) => {
+    const hasStructure = msg.title || msg.summary || (msg.keyPoints && msg.keyPoints.length) || (msg.actionSteps && msg.actionSteps.length);
+    if (!hasStructure) {
+      // render plain text with line breaks
+      return String(msg.content || '').split('\n').map((line, i) => (
+        <p key={i} className="text-sm leading-relaxed">{line}</p>
+      ));
+    }
+
+    return (
+      <div className="space-y-2">
+        {msg.title && <div className="font-semibold text-sm text-purple-700">{msg.title}</div>}
+        {msg.summary && <div className="text-sm text-gray-800">{msg.summary}</div>}
+        {msg.keyPoints?.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-gray-700 mb-1">Key points</div>
+            <ul className="list-disc ml-5 space-y-1">
+              {msg.keyPoints.map((kp, idx) => (
+                <li key={idx} className="text-sm text-gray-800">{kp}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {msg.actionSteps?.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-gray-700 mb-1">Action steps</div>
+            <ul className="ml-1 space-y-1">
+              {msg.actionSteps.map((step, idx) => (
+                <li key={idx} className="flex items-start text-sm text-gray-800">
+                  <CheckCircle2 className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {msg.tips?.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-gray-700 mb-1">Tips</div>
+            <ul className="list-disc ml-5 space-y-1">
+              {msg.tips.map((tip, idx) => (
+                <li key={idx} className="text-sm text-gray-800">{tip}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+    const now = Date.now();
 
     const userMessage = {
-      id: Date.now(),
+      id: now,
       type: 'user',
       content: inputMessage,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       const response = await fetch(`${backendUrl}/api/chat/send-message`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          session_id: sessionId,
-          message: inputMessage,
-          context_type: 'health_and_nutrition'
+          session_id: sessionId || `session_${now}`,
+          message: userMessage.content,
+          context_type: 'health_and_nutrition',
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
+      if (!response.ok) throw new Error('Failed to get response');
       const data = await response.json();
 
       const botMessage = {
-        id: Date.now() + 1,
+        id: now + 1,
         type: 'bot',
         content: data.response,
         timestamp: new Date(),
         suggestions: data.suggestions || [],
-        quickActions: data.quick_actions || []
+        quickActions: data.quick_actions || [],
+        // structured fields
+        title: data.title,
+        summary: data.summary,
+        keyPoints: data.key_points,
+        actionSteps: data.action_steps,
+        tips: data.tips,
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage = {
         id: Date.now() + 1,
         type: 'bot',
         content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -92,13 +171,13 @@ const ChatModal = ({ isOpen, onClose }) => {
 
   const quickQuestions = [
     { icon: Pizza, text: "What's a healthy breakfast?", question: "What would you recommend for a healthy breakfast?" },
-    { icon: Heart, text: "Tips for better nutrition", question: "Can you give me some tips for better nutrition?" },
-    { icon: Lightbulb, text: "How many calories do I need?", question: "How do I calculate how many calories I need per day?" }
+    { icon: Heart, text: 'Tips for better nutrition', question: 'Can you give me some tips for better nutrition?' },
+    { icon: Lightbulb, text: 'How many calories do I need?', question: 'How do I calculate how many calories I need per day?' },
   ];
 
   const handleQuickQuestion = (question) => {
     setInputMessage(question);
-    setTimeout(() => sendMessage(), 100);
+    setTimeout(() => sendMessage(), 50);
   };
 
   if (!isOpen) return null;
@@ -112,12 +191,7 @@ const ChatModal = ({ isOpen, onClose }) => {
             Quick Chat - AI Nutrition Assistant
             <Sparkles className="w-4 h-4 ml-2 text-purple-400" />
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
@@ -126,48 +200,45 @@ const ChatModal = ({ isOpen, onClose }) => {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-                  <div
-                    className={`px-4 py-2 rounded-lg ${
-                      message.type === 'user'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
-                  >
+                  <div className={`px-4 py-2 rounded-lg ${message.type === 'user' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
                     <div className="flex items-start space-x-2">
-                      {message.type === 'bot' && (
-                        <Bot className="w-4 h-4 mt-1 text-purple-600 flex-shrink-0" />
-                      )}
-                      {message.type === 'user' && (
-                        <User className="w-4 h-4 mt-1 text-white flex-shrink-0" />
-                      )}
-                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      {message.type === 'bot' && <Bot className="w-4 h-4 mt-1 text-purple-600 flex-shrink-0" />}
+                      {message.type === 'user' && <User className="w-4 h-4 mt-1 text-white flex-shrink-0" />}
+                      <div className="space-y-2 w-full">
+                        {message.type === 'bot' ? (
+                          renderFormatted(message)
+                        ) : (
+                          <p className="text-sm leading-relaxed">{message.content}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Quick Actions */}
+
+                  {/* Suggestions and Quick Actions */}
+                  {message.suggestions && message.suggestions.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {message.suggestions.map((s, idx) => (
+                        <Button key={idx} size="sm" variant="secondary" onClick={() => handleQuickQuestion(s)} className="text-xs">
+                          {s}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
                   {message.quickActions && message.quickActions.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {message.quickActions.map((action, idx) => (
-                        <Button
-                          key={idx}
-                          size="sm"
-                          variant="outline"
-                          onClick={() => console.log('Quick action:', action)}
-                          className="text-xs"
-                        >
+                        <Button key={idx} size="sm" variant="outline" onClick={() => console.log('Quick action:', action)} className="text-xs">
                           {action.label}
                         </Button>
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="text-xs text-gray-500 mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
@@ -189,18 +260,12 @@ const ChatModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Quick Questions */}
-          {messages.length <= 1 && (
+          {messages.length &lt;= 1 && (
             <div className="border-t bg-gray-50 p-4">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Quick Questions:</h4>
               <div className="space-y-2">
                 {quickQuestions.map((item, idx) => (
-                  <Button
-                    key={idx}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleQuickQuestion(item.question)}
-                    className="w-full justify-start h-auto p-3 text-left hover:bg-purple-50"
-                  >
+                  <Button key={idx} variant="ghost" size="sm" onClick={() => handleQuickQuestion(item.question)} className="w-full justify-start h-auto p-3 text-left hover:bg-purple-50">
                     <item.icon className="w-4 h-4 mr-3 text-purple-600 flex-shrink-0" />
                     <span className="text-sm">{item.text}</span>
                   </Button>
@@ -221,11 +286,7 @@ const ChatModal = ({ isOpen, onClose }) => {
                 rows="2"
                 disabled={isLoading}
               />
-              <Button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4"
-              >
+              <Button onClick={sendMessage} disabled={!inputMessage.trim() || isLoading} className="bg-purple-600 hover:bg-purple-700 text-white px-4">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
