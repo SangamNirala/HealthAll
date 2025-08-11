@@ -554,32 +554,19 @@ class AIServiceManager:
             return self._default_clinical_insights(provider_data)
 
     # =====================
-    # Chat Orchestration
+    # Enhanced Chat Orchestration with Advanced Context
     # =====================
-    async def generate_chat_response(self, message: str, history: List[Dict[str, Any]], context_type: str = "health_and_nutrition") -> Dict[str, Any]:
-        """Generate a structured chat response using available providers (free models only)"""
-        system_instruction = (
-            "You are an expert AI assistant for food, nutrition, and general health. "
-            "Always be evidence-based, friendly, and concise. Ask clarifying questions when needed. "
-            "Output STRICT JSON with keys: title (string), summary (string), key_points (array of strings), "
-            "action_steps (array of strings), tips (array of strings), suggestions (array of strings), "
-            "quick_actions (array of {type,label,action})."
-        )
-
-        # Build history into a compact string
-        history_lines = []
-        for msg in (history or [])[-8:]:
-            role = "User" if msg.get("type") == "user" else "Assistant"
-            content = msg.get("content", "")
-            history_lines.append(f"{role}: {content}")
-        history_text = "\n".join(history_lines)
-
-        user_prompt = (
-            f"Context type: {context_type}\n\n"
-            f"Conversation so far:\n{history_text}\n\n"
-            f"User message: {message}\n\n"
-            "Respond in STRICT JSON only."
-        )
+    async def generate_chat_response(self, message: str, history: List[Dict[str, Any]], context_type: str = "health_and_nutrition", user_context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Generate a sophisticated, contextually-aware chat response with enhanced AI capabilities"""
+        
+        # Enhanced system prompt with advanced capabilities
+        system_instruction = self._build_enhanced_system_prompt(context_type, user_context)
+        
+        # Build comprehensive conversation context
+        conversation_context = self._build_conversation_context(history, message, user_context)
+        
+        # Create dynamic, context-aware user prompt
+        user_prompt = self._create_dynamic_prompt(message, conversation_context, context_type, user_context)
 
         # Try Groq first (fast, high quality, free-tier available)
         if self.groq_client:
