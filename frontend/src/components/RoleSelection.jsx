@@ -203,6 +203,8 @@ const RoleCard = ({ role, index }) => {
 };
 
 const RoleSelection = () => {
+  const [showQuickChat, setShowQuickChat] = useState(false);
+
   return (
     <div className="min-h-screen gradient-hero">
       {/* Header */}
@@ -235,7 +237,12 @@ const RoleSelection = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {roleOptions.map((role, index) => (
-              <RoleCard key={role.type} role={role} index={index} />
+              <RoleCard 
+                key={role.type} 
+                role={role} 
+                index={index}
+                onQuickChat={() => setShowQuickChat(true)}
+              />
             ))}
           </div>
           
@@ -250,6 +257,12 @@ const RoleSelection = () => {
           </div>
         </div>
       </div>
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={showQuickChat}
+        onClose={() => setShowQuickChat(false)}
+      />
     </div>
   );
 };
