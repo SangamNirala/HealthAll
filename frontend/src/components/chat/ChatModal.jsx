@@ -170,6 +170,10 @@ const ChatModal = ({ isOpen, onClose }) => {
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setIsTyping(true);
+    
+    // Update interaction count
+    updateInteractionCount();
 
     try {
       const response = await fetch(`${backendUrl}/api/chat/send-message`, {
@@ -179,30 +183,41 @@ const ChatModal = ({ isOpen, onClose }) => {
           session_id: sessionId || `session_${now}`,
           message: userMessage.content,
           context_type: 'health_and_nutrition',
+          user_context: userContext,
         }),
       });
 
       if (!response.ok) throw new Error('Failed to get response');
       const data = await response.json();
 
-      const botMessage = {
-        id: now + 1,
-        type: 'bot',
-        content: data.response,
-        timestamp: new Date(),
-        suggestions: data.suggestions || [],
-        quickActions: data.quick_actions || [],
-        // structured fields
-        title: data.title,
-        summary: data.summary,
-        keyPoints: data.key_points,
-        actionSteps: data.action_steps,
-        tips: data.tips,
-      };
+      // Simulate typing delay for better UX
+      setTimeout(() => {
+        setIsTyping(false);
+        
+        const botMessage = {
+          id: now + 1,
+          type: 'bot',
+          content: data.response,
+          timestamp: new Date(),
+          suggestions: data.suggestions || [],
+          quickActions: data.quick_actions || [],
+          // Enhanced structured fields
+          title: data.title,
+          summary: data.summary,
+          keyPoints: data.key_points,
+          actionSteps: data.action_steps,
+          tips: data.tips,
+          personalization: data.personalization,
+          confidenceLevel: data.confidence_level,
+          followUpPriority: data.follow_up_priority,
+        };
 
-      setMessages((prev) => [...prev, botMessage]);
+        setMessages((prev) => [...prev, botMessage]);
+      }, 800);
+      
     } catch (error) {
       console.error('Chat error:', error);
+      setIsTyping(false);
       const errorMessage = {
         id: Date.now() + 1,
         type: 'bot',
