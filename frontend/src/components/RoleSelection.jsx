@@ -76,9 +76,8 @@ const roleOptions = [
   }
 ];
 
-const RoleCard = ({ role, index }) => {
+const RoleCard = ({ role, index, onQuickChat }) => {
   const navigate = useNavigate();
-  const [showQuickChat, setShowQuickChat] = useState(false);
   const IconComponent = role.icon;
 
   const handleDashboardClick = () => {
@@ -99,7 +98,9 @@ const RoleCard = ({ role, index }) => {
   };
 
   const handleQuickChatClick = () => {
-    setShowQuickChat(true);
+    if (onQuickChat) {
+      onQuickChat();
+    }
   };
 
   return (
