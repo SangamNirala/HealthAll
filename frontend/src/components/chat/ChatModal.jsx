@@ -71,12 +71,18 @@ const ChatModal = ({ isOpen, onClose }) => {
         ]);
       } catch (e) {
         // If session creation fails, still allow chat but show error
+        const fallbackWelcome = userContext.profile_type && userContext.profile_type !== 'general'
+          ? `Welcome! I'm your enhanced AI nutrition assistant. Even though we had a connection issue, I'm still here to provide specialized ${userContext.profile_type} guidance. You can ask me about nutrition, meals, and healthy habits.`
+          : "Welcome! You can ask me about nutrition, meals, and healthy habits with enhanced AI understanding.";
+          
         setMessages([
           {
             id: Date.now(),
             type: 'bot',
-            content: "Welcome! You can ask me about nutrition, meals, and healthy habits.",
+            content: fallbackWelcome,
             timestamp: new Date(),
+            title: "Enhanced AI Assistant Ready",
+            summary: fallbackWelcome,
           },
         ]);
       }
