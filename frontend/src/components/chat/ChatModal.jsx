@@ -14,8 +14,28 @@ const ChatModal = ({ isOpen, onClose }) => {
 
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Initialize user context from localStorage or role context
+  useEffect(() => {
+    const storedUserRole = localStorage.getItem('selectedRole');
+    const storedUserId = localStorage.getItem('patient_user_id') || 
+                        localStorage.getItem('provider_user_id') || 
+                        localStorage.getItem('family_user_id') ||
+                        localStorage.getItem('guest_session_id');
+    
+    setUserContext({
+      profile_type: storedUserRole || 'general',
+      user_id: storedUserId,
+      health_goals: JSON.parse(localStorage.getItem('health_goals') || '[]'),
+      dietary_restrictions: JSON.parse(localStorage.getItem('dietary_restrictions') || '[]'),
+      interaction_count: parseInt(localStorage.getItem('chat_interaction_count') || '0')
+    });
+  }, []);
+
+  // Update interaction count
+  const updateInteractionCount = () => {
+    const newCount = userContext.interaction_count + 1;
+    setUserContext(prev => ({ ...prev, interaction_count: newCount }));
+    localStorage.setItem('chat_interaction_count', newCount.toString());
   };
 
   useEffect(() => {
