@@ -283,7 +283,15 @@ const ChatModal = ({ isOpen, onClose }) => {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b">
           <CardTitle className="flex items-center text-lg font-semibold">
             <Bot className="w-5 h-5 mr-2 text-purple-600" />
-            Quick Chat - AI Nutrition Assistant
+            <div className="flex flex-col">
+              <span>Enhanced AI Nutrition Assistant</span>
+              {userContext.profile_type && (
+                <span className="text-xs font-normal text-gray-500 capitalize">
+                  {userContext.profile_type === 'general' ? 'Personalized for you' : `${userContext.profile_type} mode`}
+                  {userContext.interaction_count > 0 && ` • ${userContext.interaction_count} conversations`}
+                </span>
+              )}
+            </div>
             <Sparkles className="w-4 h-4 ml-2 text-purple-400" />
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
