@@ -47,7 +47,7 @@ class GeminiAPIRotator:
             
         # Try to find a working key
         attempts = 0
-        while attempts &lt; len(self.api_keys):
+        while attempts < len(self.api_keys):
             current_key = self.api_keys[self.current_key_index]
             
             if current_key not in self.failed_keys:
