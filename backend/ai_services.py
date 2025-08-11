@@ -568,7 +568,295 @@ class AIServiceManager:
         # Create dynamic, context-aware user prompt
         user_prompt = self._create_dynamic_prompt(message, conversation_context, context_type, user_context)
 
-        # Try Groq first (fast, high quality, free-tier available)
+        # Try advanced models with enhanced prompting
+        response_data = await self._try_enhanced_ai_providers(system_instruction, user_prompt, conversation_context)
+        
+        # Post-process response for enhanced quality
+        enhanced_response = self._enhance_response_quality(response_data, conversation_context, user_context)
+        
+        return enhanced_response
+
+    def _build_enhanced_system_prompt(self, context_type: str, user_context: Dict[str, Any] = None) -> str:
+        """Build an advanced, context-aware system prompt for superior AI responses"""
+        
+        base_expertise = (
+            "You are an advanced AI nutrition and health specialist with deep expertise in:\n"
+            "- Evidence-based nutritional science and dietetics\n"
+            "- Personalized health recommendations and meal planning\n"
+            "- Behavioral psychology for sustainable health habits\n"
+            "- Clinical nutrition and therapeutic interventions\n"
+            "- Food science, metabolism, and nutrient interactions\n\n"
+        )
+        
+        personality_traits = (
+            "Your communication style is:\n"
+            "- Empathetic and encouraging, yet scientifically rigorous\n"
+            "- Conversational and engaging while maintaining professionalism\n"
+            "- Adaptive to user's knowledge level and emotional state\n"
+            "- Proactive in asking relevant follow-up questions\n"
+            "- Supportive of gradual, sustainable changes over drastic measures\n\n"
+        )
+        
+        # Dynamic context adaptation
+        contextual_focus = ""
+        if user_context:
+            profile_type = user_context.get('profile_type', 'general')
+            health_goals = user_context.get('health_goals', [])
+            dietary_restrictions = user_context.get('dietary_restrictions', [])
+            
+            if profile_type == 'patient':
+                contextual_focus += "SPECIALIZED CONTEXT: You're assisting a patient - provide clinical-grade accuracy with compassionate guidance.\n"
+            elif profile_type == 'provider':
+                contextual_focus += "SPECIALIZED CONTEXT: You're assisting a healthcare provider - provide evidence-based insights suitable for clinical practice.\n"
+            elif profile_type == 'family':
+                contextual_focus += "SPECIALIZED CONTEXT: You're assisting a family - consider multi-generational needs and practical family dynamics.\n"
+                
+            if health_goals:
+                contextual_focus += f"USER GOALS: {', '.join(health_goals)}\n"
+            if dietary_restrictions:
+                contextual_focus += f"DIETARY CONSIDERATIONS: {', '.join(dietary_restrictions)}\n"
+                
+        output_format = (
+            "\nYou must respond in STRICT JSON format with enhanced structure:\n"
+            "{\n"
+            '  "title": "Engaging, specific title relevant to user query",\n'
+            '  "summary": "Comprehensive main response (2-3 sentences, naturally conversational)",\n'
+            '  "key_points": ["2-4 evidence-based insights specific to user situation"],\n'
+            '  "action_steps": ["2-3 concrete, actionable steps user can take immediately"],\n'
+            '  "tips": ["2-3 practical tips or pro-insights"],\n'
+            '  "suggestions": ["3-4 natural follow-up questions user might ask"],\n'
+            '  "quick_actions": [{"type": "action_type", "label": "Button text", "action": "action_id"}],\n'
+            '  "personalization": "Brief insight showing you understand their specific context",\n'
+            '  "confidence_level": "high|medium|moderate - based on evidence quality",\n'
+            '  "follow_up_priority": "high|medium|low - how important is continued conversation"\n'
+            "}\n\n"
+            "Remember: Be conversational yet professional, specific yet accessible, evidence-based yet empathetic."
+        )
+        
+        return base_expertise + personality_traits + contextual_focus + output_format
+
+    def _build_conversation_context(self, history: List[Dict[str, Any]], current_message: str, user_context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Build comprehensive conversation context for enhanced AI responses"""
+        
+        # Analyze conversation patterns
+        context = {
+            "conversation_length": len(history) if history else 0,
+            "user_engagement": "new",
+            "topics_discussed": [],
+            "user_preferences_detected": {},
+            "conversation_tone": "neutral"
+        }
+        
+        if history and len(history) > 0:
+            # Analyze engagement level
+            if len(history) >= 6:
+                context["user_engagement"] = "highly_engaged"
+            elif len(history) >= 3:
+                context["user_engagement"] = "engaged"
+            else:
+                context["user_engagement"] = "exploring"
+                
+            # Extract topics and patterns
+            all_messages = [msg.get("content", "") for msg in history[-10:]]
+            context["topics_discussed"] = self._extract_conversation_topics(all_messages)
+            
+            # Detect user preferences and concerns
+            context["user_preferences_detected"] = self._detect_user_preferences(all_messages + [current_message])
+            
+            # Analyze conversation tone
+            context["conversation_tone"] = self._analyze_conversation_tone(all_messages + [current_message])
+        
+        # Add user profile context if available
+        if user_context:
+            context["user_profile"] = user_context
+            context["personalization_available"] = True
+        else:
+            context["personalization_available"] = False
+            
+        return context
+
+    def _create_dynamic_prompt(self, message: str, context: Dict[str, Any], context_type: str, user_context: Dict[str, Any] = None) -> str:
+        """Create a dynamic, intelligent prompt based on conversation context"""
+        
+        # Build conversation history with intelligence
+        history_summary = ""
+        if context["conversation_length"] > 0:
+            engagement_level = context["user_engagement"]
+            topics = context["topics_discussed"]
+            preferences = context["user_preferences_detected"]
+            tone = context["conversation_tone"]
+            
+            history_summary = f"""
+CONVERSATION CONTEXT:
+- User engagement level: {engagement_level}
+- Topics discussed: {', '.join(topics) if topics else 'None yet'}
+- Detected preferences: {', '.join([f"{k}: {v}" for k, v in preferences.items()]) if preferences else 'Learning...'}
+- Conversation tone: {tone}
+- Context type: {context_type}
+"""
+
+        # Add personalization context
+        personalization_context = ""
+        if user_context:
+            personalization_context = f"""
+USER PROFILE CONTEXT:
+- Profile type: {user_context.get('profile_type', 'general')}
+- Health goals: {user_context.get('health_goals', 'Not specified')}
+- Dietary restrictions: {user_context.get('dietary_restrictions', 'None mentioned')}
+- Previous interactions: {user_context.get('interaction_count', 0)}
+"""
+
+        # Current message analysis
+        message_analysis = f"""
+CURRENT MESSAGE ANALYSIS:
+- User message: "{message}"
+- Intent: {self._analyze_message_intent(message)}
+- Urgency: {self._assess_message_urgency(message)}
+- Complexity: {self._assess_message_complexity(message)}
+"""
+
+        prompt = f"""
+{history_summary}
+{personalization_context}
+{message_analysis}
+
+INSTRUCTION: Generate a highly contextual, personalized response that:
+1. Acknowledges the conversation history and user's journey
+2. Provides specific, actionable advice based on their situation
+3. Maintains conversational flow and builds rapport
+4. Offers relevant follow-up suggestions that advance their health goals
+5. Shows deep understanding of their context and needs
+
+Respond in the specified JSON format with enhanced personalization and context awareness.
+"""
+        
+        return prompt.strip()
+
+    def _extract_conversation_topics(self, messages: List[str]) -> List[str]:
+        """Extract key topics from conversation messages"""
+        topics = set()
+        
+        # Health and nutrition keywords
+        nutrition_keywords = {
+            'protein', 'carbs', 'carbohydrates', 'fats', 'calories', 'vitamins', 'minerals',
+            'breakfast', 'lunch', 'dinner', 'snack', 'meal', 'diet', 'nutrition',
+            'weight', 'fitness', 'exercise', 'health', 'wellness', 'energy'
+        }
+        
+        for message in messages:
+            if not message:
+                continue
+            words = message.lower().split()
+            for word in words:
+                if word in nutrition_keywords:
+                    topics.add(word)
+                    
+        return list(topics)[:8]  # Limit to most relevant topics
+
+    def _detect_user_preferences(self, messages: List[str]) -> Dict[str, str]:
+        """Detect user preferences from conversation patterns"""
+        preferences = {}
+        
+        combined_text = ' '.join(messages).lower()
+        
+        # Detect dietary preferences
+        if any(word in combined_text for word in ['vegetarian', 'vegan', 'plant-based']):
+            preferences['diet_type'] = 'plant-based'
+        elif any(word in combined_text for word in ['keto', 'low-carb', 'ketogenic']):
+            preferences['diet_type'] = 'low-carb'
+        elif any(word in combined_text for word in ['mediterranean', 'whole food']):
+            preferences['diet_type'] = 'whole-food'
+            
+        # Detect health goals
+        if any(word in combined_text for word in ['lose weight', 'weight loss', 'slim down']):
+            preferences['primary_goal'] = 'weight_loss'
+        elif any(word in combined_text for word in ['gain weight', 'build muscle', 'bulk']):
+            preferences['primary_goal'] = 'muscle_building'
+        elif any(word in combined_text for word in ['energy', 'tired', 'fatigue']):
+            preferences['primary_goal'] = 'energy_boost'
+            
+        # Detect communication style preference
+        if any(word in combined_text for word in ['quick', 'simple', 'easy', 'brief']):
+            preferences['communication_style'] = 'concise'
+        elif any(word in combined_text for word in ['detailed', 'explain', 'why', 'science']):
+            preferences['communication_style'] = 'detailed'
+            
+        return preferences
+
+    def _analyze_conversation_tone(self, messages: List[str]) -> str:
+        """Analyze the overall tone of the conversation"""
+        if not messages:
+            return "neutral"
+            
+        combined_text = ' '.join(messages).lower()
+        
+        # Positive indicators
+        positive_words = ['great', 'awesome', 'excellent', 'love', 'enjoy', 'excited', 'motivated']
+        # Concern indicators  
+        concern_words = ['worried', 'concerned', 'struggling', 'difficult', 'problem', 'issue', 'help']
+        # Question indicators
+        question_words = ['what', 'how', 'why', 'when', 'where', 'which', '?']
+        
+        positive_count = sum(1 for word in positive_words if word in combined_text)
+        concern_count = sum(1 for word in concern_words if word in combined_text)
+        question_count = sum(1 for word in question_words if word in combined_text)
+        
+        if concern_count > positive_count:
+            return "concerned"
+        elif positive_count > concern_count:
+            return "positive"
+        elif question_count > 2:
+            return "inquisitive"
+        else:
+            return "neutral"
+
+    def _analyze_message_intent(self, message: str) -> str:
+        """Analyze the intent behind the current message"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ['what should i', 'recommend', 'suggest', 'advice']):
+            return "seeking_recommendation"
+        elif any(word in message_lower for word in ['how to', 'how do i', 'steps', 'process']):
+            return "seeking_guidance"
+        elif any(word in message_lower for word in ['why', 'explain', 'understand', 'reason']):
+            return "seeking_explanation"
+        elif any(word in message_lower for word in ['is it', 'can i', 'should i', 'safe']):
+            return "seeking_validation"
+        elif any(word in message_lower for word in ['problem', 'issue', 'wrong', 'concern']):
+            return "reporting_issue"
+        else:
+            return "general_inquiry"
+
+    def _assess_message_urgency(self, message: str) -> str:
+        """Assess the urgency level of the message"""
+        urgent_keywords = ['urgent', 'emergency', 'immediately', 'asap', 'serious', 'critical']
+        moderate_keywords = ['soon', 'quickly', 'important', 'concerned', 'worried']
+        
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in urgent_keywords):
+            return "high"
+        elif any(word in message_lower for word in moderate_keywords):
+            return "moderate"
+        else:
+            return "low"
+
+    def _assess_message_complexity(self, message: str) -> str:
+        """Assess the complexity level of the user's question"""
+        complex_keywords = ['interaction', 'metabolism', 'bioavailability', 'clinical', 'research', 'study']
+        technical_keywords = ['macros', 'micronutrients', 'glycemic', 'insulin', 'hormonal']
+        
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in complex_keywords):
+            return "high"
+        elif any(word in message_lower for word in technical_keywords) or len(message.split()) > 20:
+            return "moderate"
+        else:
+            return "low"
+
+    async def _try_enhanced_ai_providers(self, system_instruction: str, user_prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Try AI providers with enhanced context and better model selection"""
         if self.groq_client:
             try:
                 completion = self.groq_client.chat.completions.create(
