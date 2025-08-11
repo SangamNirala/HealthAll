@@ -262,7 +262,7 @@ const ChatModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Quick Questions */}
-          {messages.length &lt;= 1 && (
+          {messages.length <= 1 && (
             <div className="border-t bg-gray-50 p-4">
               <h4 className="text-sm font-medium text-gray-900 mb-3">Quick Questions:</h4>
               <div className="space-y-2">
