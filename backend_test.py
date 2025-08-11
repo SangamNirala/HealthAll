@@ -6729,6 +6729,10 @@ class HealthPlatformAPITester:
         print("\n📋 Testing AI API Endpoints (PRIORITY)...")
         ai_success = self.test_ai_api_endpoints()
         
+        # Test Chat API Endpoints (NEW - REQUESTED TEST)
+        print("\n📋 Testing Chat API Endpoints (REQUESTED)...")
+        chat_success = self.test_chat_api_endpoints()
+        
         # Test Phase 3 AI Integration for PersonalInsights (NEW - FOCUS TEST)
         print("\n📋 Testing Phase 3 AI Integration - PersonalInsights (FOCUS)...")
         phase3_ai_success = self.test_phase3_ai_integration_personalinsights()
