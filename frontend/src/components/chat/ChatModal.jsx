@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader2, Bot, User, Sparkles, Pizza, Heart, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { X, Send, Loader2, Bot, User, Sparkles, Pizza, Heart, Lightbulb, CheckCircle2, Brain, Zap, Target } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
@@ -8,9 +8,11 @@ const ChatModal = ({ isOpen, onClose }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [userContext, setUserContext] = useState({});
   const messagesEndRef = useRef(null);
 
-  const backendUrl = process.env.REACT_APP_BACKEND_URL; // must use env only
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
