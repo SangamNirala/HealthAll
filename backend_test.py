@@ -6424,6 +6424,237 @@ class HealthPlatformAPITester:
         
         return success1 and success2 and success3
 
+    def test_chat_api_endpoints(self):
+        """Test Chat API endpoints for food and health queries"""
+        print("\n💬 Testing Chat API Endpoints...")
+        
+        # Test 1: Start a new chat session
+        success1, session_response = self.run_test(
+            "Start Chat Session",
+            "POST",
+            "chat/start-session",
+            200
+        )
+        
+        session_id = None
+        if success1 and session_response:
+            session_id = session_response.get('session_id')
+            expected_keys = ['session_id', 'message', 'welcome_message']
+            missing_keys = [key for key in expected_keys if key not in session_response]
+            if not missing_keys:
+                print(f"   ✅ Start session response contains all required keys: {expected_keys}")
+                print(f"   Session ID: {session_id}")
+            else:
+                print(f"   ❌ Start session response missing keys: {missing_keys}")
+                success1 = False
+        
+        if not session_id:
+            print("   ❌ Failed to get session ID, using fallback for remaining tests")
+            session_id = f"test_session_{int(datetime.now().timestamp())}"
+        
+        # Test 2: Send a food-related question
+        food_question_data = {
+            "session_id": session_id,
+            "message": "What's a healthy breakfast for someone trying to lose weight?",
+            "context_type": "health_and_nutrition",
+            "user_context": {"goal": "weight_loss", "meal_type": "breakfast"}
+        }
+        
+        success2, food_response = self.run_test(
+            "Send Food-Related Message",
+            "POST",
+            "chat/send-message",
+            200,
+            data=food_question_data
+        )
+        
+        # Validate food question response
+        if success2 and food_response:
+            expected_keys = ['response', 'session_id', 'suggestions', 'quick_actions', 'confidence']
+            missing_keys = [key for key in expected_keys if key not in food_response]
+            if not missing_keys:
+                print(f"   ✅ Food question response contains all required keys: {expected_keys}")
+                
+                # Validate response content
+                response_text = food_response.get('response', '')
+                suggestions = food_response.get('suggestions', [])
+                quick_actions = food_response.get('quick_actions', [])
+                confidence = food_response.get('confidence', 0)
+                
+                print(f"   Response length: {len(response_text)} characters")
+                print(f"   Suggestions count: {len(suggestions)}")
+                print(f"   Quick actions count: {len(quick_actions)}")
+                print(f"   Confidence score: {confidence}")
+                
+                # Check if response is nutrition-focused
+                nutrition_keywords = ['breakfast', 'healthy', 'protein', 'fiber', 'calories', 'nutrition', 'weight']
+                has_nutrition_content = any(keyword.lower() in response_text.lower() for keyword in nutrition_keywords)
+                print(f"   ✅ Contains nutrition content: {has_nutrition_content}")
+                
+                if not has_nutrition_content:
+                    print(f"   ⚠️  Response may not be nutrition-focused enough")
+                
+            else:
+                print(f"   ❌ Food question response missing keys: {missing_keys}")
+                success2 = False
+        
+        # Test 3: Send a health-related question
+        health_question_data = {
+            "session_id": session_id,
+            "message": "How much protein do I need daily for muscle building?",
+            "context_type": "health_and_nutrition",
+            "user_context": {"goal": "muscle_building", "topic": "protein_requirements"}
+        }
+        
+        success3, health_response = self.run_test(
+            "Send Health-Related Message",
+            "POST",
+            "chat/send-message",
+            200,
+            data=health_question_data
+        )
+        
+        # Validate health question response
+        if success3 and health_response:
+            response_text = health_response.get('response', '')
+            suggestions = health_response.get('suggestions', [])
+            quick_actions = health_response.get('quick_actions', [])
+            
+            # Check if response is health/protein-focused
+            protein_keywords = ['protein', 'muscle', 'grams', 'daily', 'building', 'amino', 'intake']
+            has_protein_content = any(keyword.lower() in response_text.lower() for keyword in protein_keywords)
+            print(f"   ✅ Contains protein/health content: {has_protein_content}")
+            
+            # Check for contextual suggestions
+            if suggestions:
+                print(f"   ✅ Generated contextual suggestions: {suggestions[:2]}")  # Show first 2
+            
+            if quick_actions:
+                print(f"   ✅ Generated quick actions: {[qa.get('label', 'N/A') for qa in quick_actions]}")
+        
+        # Test 4: Test conversation context maintenance
+        followup_question_data = {
+            "session_id": session_id,
+            "message": "What are some good protein sources for vegetarians?",
+            "context_type": "health_and_nutrition",
+            "user_context": {"diet_type": "vegetarian", "topic": "protein_sources"}
+        }
+        
+        success4, followup_response = self.run_test(
+            "Send Follow-up Message (Context Test)",
+            "POST",
+            "chat/send-message",
+            200,
+            data=followup_question_data
+        )
+        
+        # Validate context maintenance
+        if success4 and followup_response:
+            response_text = followup_response.get('response', '')
+            vegetarian_keywords = ['vegetarian', 'plant', 'beans', 'lentils', 'tofu', 'quinoa', 'nuts', 'seeds']
+            has_vegetarian_content = any(keyword.lower() in response_text.lower() for keyword in vegetarian_keywords)
+            print(f"   ✅ Contains vegetarian protein content: {has_vegetarian_content}")
+        
+        # Test 5: Get chat history
+        success5, history_response = self.run_test(
+            "Get Chat History",
+            "GET",
+            f"chat/history/{session_id}",
+            200
+        )
+        
+        # Validate chat history
+        if success5 and history_response:
+            expected_keys = ['messages', 'session_id', 'created_at', 'context_type']
+            missing_keys = [key for key in expected_keys if key not in history_response]
+            if not missing_keys:
+                print(f"   ✅ Chat history response contains all required keys: {expected_keys}")
+                
+                messages = history_response.get('messages', [])
+                print(f"   Messages in history: {len(messages)}")
+                
+                # Validate message structure
+                if messages:
+                    user_messages = [msg for msg in messages if msg.get('type') == 'user']
+                    assistant_messages = [msg for msg in messages if msg.get('type') == 'assistant']
+                    
+                    print(f"   User messages: {len(user_messages)}")
+                    print(f"   Assistant messages: {len(assistant_messages)}")
+                    
+                    # Check if messages are properly stored
+                    if len(user_messages) >= 3 and len(assistant_messages) >= 3:
+                        print(f"   ✅ Conversation history properly maintained")
+                    else:
+                        print(f"   ⚠️  Expected more messages in history")
+                        
+                    # Validate message structure
+                    if messages:
+                        sample_message = messages[0]
+                        msg_keys = ['type', 'content', 'timestamp']
+                        missing_msg_keys = [key for key in msg_keys if key not in sample_message]
+                        if not missing_msg_keys:
+                            print(f"   ✅ Message structure valid")
+                        else:
+                            print(f"   ❌ Message structure missing keys: {missing_msg_keys}")
+                            success5 = False
+            else:
+                print(f"   ❌ Chat history response missing keys: {missing_keys}")
+                success5 = False
+        
+        # Test 6: Test AI service failure fallback
+        invalid_session_data = {
+            "session_id": f"fallback_test_{int(datetime.now().timestamp())}",
+            "message": "This is a test message to check fallback responses",
+            "context_type": "health_and_nutrition"
+        }
+        
+        success6, fallback_response = self.run_test(
+            "Test Fallback Response",
+            "POST",
+            "chat/send-message",
+            200,
+            data=invalid_session_data
+        )
+        
+        # Validate fallback response
+        if success6 and fallback_response:
+            response_text = fallback_response.get('response', '')
+            confidence = fallback_response.get('confidence', 1.0)
+            
+            # Fallback responses should have lower confidence and helpful content
+            if confidence <= 0.8 and len(response_text) > 0:
+                print(f"   ✅ Fallback response working (confidence: {confidence})")
+            else:
+                print(f"   ⚠️  Fallback response may not be working as expected")
+        
+        # Test 7: Test empty session history
+        empty_session_id = f"empty_session_{int(datetime.now().timestamp())}"
+        success7, empty_history = self.run_test(
+            "Get Empty Session History",
+            "GET",
+            f"chat/history/{empty_session_id}",
+            200
+        )
+        
+        # Validate empty history response
+        if success7 and empty_history:
+            messages = empty_history.get('messages', [])
+            if len(messages) == 0:
+                print(f"   ✅ Empty session history handled correctly")
+            else:
+                print(f"   ⚠️  Expected empty messages array for new session")
+        
+        print(f"\n📊 Chat API Test Summary:")
+        print(f"   ✅ Start session: {'PASS' if success1 else 'FAIL'}")
+        print(f"   ✅ Food-related query: {'PASS' if success2 else 'FAIL'}")
+        print(f"   ✅ Health-related query: {'PASS' if success3 else 'FAIL'}")
+        print(f"   ✅ Context maintenance: {'PASS' if success4 else 'FAIL'}")
+        print(f"   ✅ Chat history retrieval: {'PASS' if success5 else 'FAIL'}")
+        print(f"   ✅ Fallback responses: {'PASS' if success6 else 'FAIL'}")
+        print(f"   ✅ Empty session handling: {'PASS' if success7 else 'FAIL'}")
+        
+        return success1 and success2 and success3 and success4 and success5 and success6 and success7
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Health & Nutrition Platform API Tests")
