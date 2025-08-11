@@ -6655,6 +6655,453 @@ class HealthPlatformAPITester:
         
         return success1 and success2 and success3 and success4 and success5 and success6 and success7
 
+    def test_enhanced_chat_api_endpoints(self):
+        """Test Enhanced Chat Model System API endpoints"""
+        print("\n🤖 Testing Enhanced Chat Model System...")
+        
+        # Test 1: Start a new chat session
+        success1, session_response = self.run_test(
+            "Start Chat Session",
+            "POST",
+            "chat/start-session",
+            200
+        )
+        
+        session_id = session_response.get("session_id") if session_response else f"test_session_{datetime.now().strftime('%H%M%S')}"
+        
+        # Test 2: Send basic message with enhanced context
+        basic_message_data = {
+            "session_id": session_id,
+            "message": "What should I eat for breakfast to boost my energy?",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "health_goals": ["energy_boost", "weight_management"],
+                "dietary_restrictions": ["vegetarian"],
+                "interaction_count": 1
+            }
+        }
+        
+        success2, basic_response = self.run_test(
+            "Send Basic Message with Enhanced Context",
+            "POST",
+            "chat/send-message",
+            200,
+            data=basic_message_data
+        )
+        
+        # Test 3: Send follow-up message to test conversation context
+        followup_message_data = {
+            "session_id": session_id,
+            "message": "Can you give me specific meal ideas with protein amounts?",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "health_goals": ["energy_boost", "weight_management"],
+                "dietary_restrictions": ["vegetarian"],
+                "interaction_count": 2
+            }
+        }
+        
+        success3, followup_response = self.run_test(
+            "Send Follow-up Message (Context Building)",
+            "POST",
+            "chat/send-message",
+            200,
+            data=followup_message_data
+        )
+        
+        # Test 4: Test different user context profiles
+        provider_message_data = {
+            "session_id": f"provider_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "What are the latest evidence-based recommendations for managing diabetes through nutrition?",
+            "context_type": "clinical_guidance",
+            "user_context": {
+                "profile_type": "provider",
+                "specialization": ["diabetes_management", "clinical_nutrition"],
+                "patient_demographics": ["adults", "seniors"],
+                "interaction_count": 1
+            }
+        }
+        
+        success4, provider_response = self.run_test(
+            "Provider Context Message",
+            "POST",
+            "chat/send-message",
+            200,
+            data=provider_message_data
+        )
+        
+        # Test 5: Test family context
+        family_message_data = {
+            "session_id": f"family_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "How can I plan healthy meals for my family with kids who are picky eaters?",
+            "context_type": "family_nutrition",
+            "user_context": {
+                "profile_type": "family",
+                "family_size": 4,
+                "children_ages": [8, 12],
+                "dietary_restrictions": ["peanut_free"],
+                "interaction_count": 1
+            }
+        }
+        
+        success5, family_response = self.run_test(
+            "Family Context Message",
+            "POST",
+            "chat/send-message",
+            200,
+            data=family_message_data
+        )
+        
+        # Test 6: Get chat history
+        success6, history_response = self.run_test(
+            "Get Chat History",
+            "GET",
+            f"chat/history/{session_id}",
+            200
+        )
+        
+        # Test 7: Test error handling with malformed request
+        malformed_data = {
+            "session_id": session_id,
+            "message": "",  # Empty message
+            "context_type": "health_and_nutrition"
+        }
+        
+        success7, error_response = self.run_test(
+            "Send Empty Message (Error Handling)",
+            "POST",
+            "chat/send-message",
+            200,  # Should still return 200 with fallback response
+            data=malformed_data
+        )
+        
+        # Test 8: Test complex multi-turn conversation
+        complex_session_id = f"complex_session_{datetime.now().strftime('%H%M%S')}"
+        
+        # First message
+        complex_msg1 = {
+            "session_id": complex_session_id,
+            "message": "I'm trying to lose weight but I'm always hungry. What should I do?",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "health_goals": ["weight_loss"],
+                "current_weight": 80,
+                "goal_weight": 70,
+                "interaction_count": 1
+            }
+        }
+        
+        success8a, _ = self.run_test(
+            "Complex Conversation - Message 1",
+            "POST",
+            "chat/send-message",
+            200,
+            data=complex_msg1
+        )
+        
+        # Second message
+        complex_msg2 = {
+            "session_id": complex_session_id,
+            "message": "I usually skip breakfast and eat a big lunch. Is that bad?",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "health_goals": ["weight_loss"],
+                "current_weight": 80,
+                "goal_weight": 70,
+                "interaction_count": 2
+            }
+        }
+        
+        success8b, complex_response = self.run_test(
+            "Complex Conversation - Message 2",
+            "POST",
+            "chat/send-message",
+            200,
+            data=complex_msg2
+        )
+        
+        # Validate response structures
+        validation_results = []
+        
+        if success2 and basic_response:
+            # Validate enhanced response structure
+            required_fields = ['response', 'session_id', 'suggestions', 'quick_actions', 'confidence']
+            enhanced_fields = ['title', 'summary', 'key_points', 'action_steps', 'tips']
+            
+            basic_fields_valid = all(field in basic_response for field in required_fields)
+            enhanced_fields_present = any(field in basic_response for field in enhanced_fields)
+            
+            validation_results.append(basic_fields_valid)
+            validation_results.append(enhanced_fields_present)
+            
+            print(f"   Basic response fields validation: {'✅' if basic_fields_valid else '❌'}")
+            print(f"   Enhanced response fields present: {'✅' if enhanced_fields_present else '❌'}")
+            
+            # Check confidence level
+            confidence = basic_response.get('confidence', 0)
+            confidence_valid = 0.5 <= confidence <= 1.0
+            validation_results.append(confidence_valid)
+            print(f"   Confidence level validation (0.5-1.0): {'✅' if confidence_valid else '❌'} ({confidence})")
+            
+            # Check suggestions array
+            suggestions = basic_response.get('suggestions', [])
+            suggestions_valid = isinstance(suggestions, list) and len(suggestions) > 0
+            validation_results.append(suggestions_valid)
+            print(f"   Suggestions array validation: {'✅' if suggestions_valid else '❌'} ({len(suggestions)} suggestions)")
+            
+            # Check quick actions
+            quick_actions = basic_response.get('quick_actions', [])
+            quick_actions_valid = isinstance(quick_actions, list)
+            validation_results.append(quick_actions_valid)
+            print(f"   Quick actions validation: {'✅' if quick_actions_valid else '❌'} ({len(quick_actions)} actions)")
+        
+        if success6 and history_response:
+            # Validate chat history structure
+            messages = history_response.get('messages', [])
+            history_valid = isinstance(messages, list) and len(messages) >= 2  # Should have user + AI messages
+            validation_results.append(history_valid)
+            print(f"   Chat history validation: {'✅' if history_valid else '❌'} ({len(messages)} messages)")
+            
+            # Check message structure
+            if messages:
+                first_message = messages[0]
+                message_structure_valid = all(field in first_message for field in ['type', 'content', 'timestamp'])
+                validation_results.append(message_structure_valid)
+                print(f"   Message structure validation: {'✅' if message_structure_valid else '❌'}")
+        
+        # Test context awareness by checking if responses differ based on user context
+        context_awareness_valid = True
+        if success2 and success4 and basic_response and provider_response:
+            basic_content = basic_response.get('response', '').lower()
+            provider_content = provider_response.get('response', '').lower()
+            
+            # Provider response should be more clinical/evidence-based
+            clinical_terms = ['evidence', 'clinical', 'research', 'study', 'guidelines']
+            provider_clinical = any(term in provider_content for term in clinical_terms)
+            
+            # Basic response should be more conversational
+            conversational_terms = ['you', 'your', 'try', 'consider', 'might']
+            basic_conversational = any(term in basic_content for term in conversational_terms)
+            
+            context_awareness_valid = provider_clinical or basic_conversational
+            validation_results.append(context_awareness_valid)
+            print(f"   Context awareness validation: {'✅' if context_awareness_valid else '❌'}")
+        
+        # Overall success
+        all_tests_passed = all([success1, success2, success3, success4, success5, success6, success7, success8a, success8b])
+        all_validations_passed = all(validation_results) if validation_results else True
+        
+        overall_success = all_tests_passed and all_validations_passed
+        
+        print(f"   Enhanced Chat API Tests: {'✅ PASSED' if overall_success else '❌ FAILED'}")
+        print(f"   API Tests: {sum([success1, success2, success3, success4, success5, success6, success7, success8a, success8b])}/9")
+        print(f"   Validation Tests: {sum(validation_results)}/{len(validation_results) if validation_results else 0}")
+        
+        return overall_success
+
+    def test_ai_service_integration(self):
+        """Test AI Service Integration and Fallback Mechanisms"""
+        print("\n🧠 Testing AI Service Integration...")
+        
+        # Test 1: Test with realistic health query
+        realistic_query_data = {
+            "session_id": f"ai_test_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "I have diabetes and high blood pressure. What foods should I avoid and what should I eat more of?",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "health_conditions": ["diabetes", "hypertension"],
+                "medications": ["metformin", "lisinopril"],
+                "age": 55,
+                "interaction_count": 1
+            }
+        }
+        
+        success1, realistic_response = self.run_test(
+            "Realistic Health Query with Medical Context",
+            "POST",
+            "chat/send-message",
+            200,
+            data=realistic_query_data
+        )
+        
+        # Test 2: Test with nutrition calculation query
+        calculation_query_data = {
+            "session_id": f"calc_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "How many calories should I eat per day if I'm 30 years old, 170cm tall, weigh 75kg, and exercise 3 times a week?",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "age": 30,
+                "height": 170,
+                "weight": 75,
+                "activity_level": "moderately_active",
+                "health_goals": ["maintain_weight"],
+                "interaction_count": 1
+            }
+        }
+        
+        success2, calculation_response = self.run_test(
+            "Nutrition Calculation Query",
+            "POST",
+            "chat/send-message",
+            200,
+            data=calculation_query_data
+        )
+        
+        # Test 3: Test with meal planning query
+        meal_planning_data = {
+            "session_id": f"meal_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "Can you create a 3-day meal plan for someone who is vegetarian, trying to lose weight, and has a busy schedule?",
+            "context_type": "meal_planning",
+            "user_context": {
+                "profile_type": "patient",
+                "dietary_restrictions": ["vegetarian"],
+                "health_goals": ["weight_loss"],
+                "lifestyle": ["busy_schedule"],
+                "cooking_time": "30_minutes_max",
+                "interaction_count": 1
+            }
+        }
+        
+        success3, meal_response = self.run_test(
+            "Meal Planning Query",
+            "POST",
+            "chat/send-message",
+            200,
+            data=meal_planning_data
+        )
+        
+        # Test 4: Test fallback mechanism with very long message
+        long_message_data = {
+            "session_id": f"long_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "I have been struggling with my weight for years and have tried many different diets including keto, paleo, intermittent fasting, and calorie counting but nothing seems to work long term and I always end up gaining the weight back and I'm feeling really frustrated and don't know what to do anymore and I'm wondering if you can help me understand why this keeps happening and what I should try next because I really want to be healthy and feel good about myself but I'm starting to lose hope that I'll ever be able to maintain a healthy weight and lifestyle and I'm also dealing with stress from work and family responsibilities which makes it even harder to stick to healthy habits and I often find myself eating emotionally when I'm stressed or tired and I know this isn't helping but I don't know how to break the cycle and I'm hoping you can provide some guidance and support to help me figure out a sustainable approach to health and wellness that will actually work for me long term.",
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "patient",
+                "health_goals": ["weight_loss", "stress_management"],
+                "previous_attempts": ["keto", "paleo", "intermittent_fasting"],
+                "challenges": ["emotional_eating", "work_stress", "family_stress"],
+                "interaction_count": 1
+            }
+        }
+        
+        success4, long_response = self.run_test(
+            "Long Complex Message (Fallback Test)",
+            "POST",
+            "chat/send-message",
+            200,
+            data=long_message_data
+        )
+        
+        # Test 5: Test with invalid/edge case data
+        edge_case_data = {
+            "session_id": f"edge_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "🍎🥗🏃‍♀️💪 healthy food exercise?",  # Emoji-heavy message
+            "context_type": "health_and_nutrition",
+            "user_context": {
+                "profile_type": "general",
+                "interaction_count": 1
+            }
+        }
+        
+        success5, edge_response = self.run_test(
+            "Edge Case Message (Emojis)",
+            "POST",
+            "chat/send-message",
+            200,
+            data=edge_case_data
+        )
+        
+        # Validate AI service responses
+        validation_results = []
+        
+        if success1 and realistic_response:
+            # Check if response addresses medical conditions
+            response_content = realistic_response.get('response', '').lower()
+            medical_awareness = any(term in response_content for term in ['diabetes', 'blood pressure', 'sodium', 'sugar', 'carbohydrate'])
+            validation_results.append(medical_awareness)
+            print(f"   Medical condition awareness: {'✅' if medical_awareness else '❌'}")
+            
+            # Check for structured response elements
+            structured_elements = realistic_response.get('key_points', []) or realistic_response.get('action_steps', [])
+            has_structure = len(structured_elements) > 0
+            validation_results.append(has_structure)
+            print(f"   Structured response elements: {'✅' if has_structure else '❌'}")
+        
+        if success2 and calculation_response:
+            # Check if response includes numerical guidance
+            response_content = calculation_response.get('response', '').lower()
+            numerical_guidance = any(term in response_content for term in ['calorie', 'kcal', '2000', '2500', 'tdee', 'bmr'])
+            validation_results.append(numerical_guidance)
+            print(f"   Numerical guidance present: {'✅' if numerical_guidance else '❌'}")
+        
+        if success3 and meal_response:
+            # Check if response includes meal suggestions
+            response_content = meal_response.get('response', '').lower()
+            meal_suggestions = any(term in response_content for term in ['breakfast', 'lunch', 'dinner', 'meal', 'recipe'])
+            validation_results.append(meal_suggestions)
+            print(f"   Meal suggestions present: {'✅' if meal_suggestions else '❌'}")
+            
+            # Check for vegetarian awareness
+            vegetarian_awareness = any(term in response_content for term in ['vegetarian', 'plant', 'protein', 'beans', 'tofu'])
+            validation_results.append(vegetarian_awareness)
+            print(f"   Vegetarian dietary awareness: {'✅' if vegetarian_awareness else '❌'}")
+        
+        if success4 and long_response:
+            # Check if fallback handles long message appropriately
+            response_confidence = long_response.get('confidence', 0)
+            fallback_handled = response_confidence >= 0.5  # Should still provide reasonable confidence
+            validation_results.append(fallback_handled)
+            print(f"   Long message fallback handling: {'✅' if fallback_handled else '❌'}")
+        
+        if success5 and edge_response:
+            # Check if edge case is handled gracefully
+            edge_confidence = edge_response.get('confidence', 0)
+            edge_handled = edge_confidence >= 0.5 and len(edge_response.get('response', '')) > 10
+            validation_results.append(edge_handled)
+            print(f"   Edge case handling: {'✅' if edge_handled else '❌'}")
+        
+        # Test response time (should be reasonable)
+        import time
+        start_time = time.time()
+        
+        quick_test_data = {
+            "session_id": f"speed_session_{datetime.now().strftime('%H%M%S')}",
+            "message": "What's a healthy snack?",
+            "context_type": "health_and_nutrition",
+            "user_context": {"profile_type": "general", "interaction_count": 1}
+        }
+        
+        success6, speed_response = self.run_test(
+            "Response Time Test",
+            "POST",
+            "chat/send-message",
+            200,
+            data=quick_test_data
+        )
+        
+        response_time = time.time() - start_time
+        reasonable_time = response_time < 30  # Should respond within 30 seconds
+        validation_results.append(reasonable_time)
+        print(f"   Response time validation (<30s): {'✅' if reasonable_time else '❌'} ({response_time:.2f}s)")
+        
+        # Overall success
+        all_tests_passed = all([success1, success2, success3, success4, success5, success6])
+        all_validations_passed = all(validation_results) if validation_results else True
+        
+        overall_success = all_tests_passed and all_validations_passed
+        
+        print(f"   AI Service Integration Tests: {'✅ PASSED' if overall_success else '❌ FAILED'}")
+        print(f"   API Tests: {sum([success1, success2, success3, success4, success5, success6])}/6")
+        print(f"   Validation Tests: {sum(validation_results)}/{len(validation_results) if validation_results else 0}")
+        
+        return overall_success
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Health & Nutrition Platform API Tests")
