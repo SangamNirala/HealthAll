@@ -5904,6 +5904,245 @@ async def analyze_goal_correlations(user_id: str):
         logger.error(f"Error analyzing correlations: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze correlations: {str(e)}")
 
+# Chat API Models
+class ChatMessageRequest(BaseModel):
+    session_id: str
+    message: str
+    context_type: str = "health_and_nutrition"
+    user_context: Dict[str, Any] = {}
+
+class ChatResponse(BaseModel):
+    response: str
+    session_id: str
+    suggestions: List[str] = []
+    quick_actions: List[Dict[str, Any]] = []
+    confidence: float = 0.8
+
+# Chat API Endpoints
+@api_router.post("/chat/send-message")
+async def send_chat_message(request: ChatMessageRequest):
+    """Send message to AI chat assistant for food and health queries"""
+    try:
+        gemini_api_key = os.environ.get('GEMINI_API_KEY')
+        if not gemini_api_key:
+            raise HTTPException(status_code=500, detail="Gemini API key not configured")
+
+        # Store chat session in database
+        chat_session = await db.chat_sessions.find_one({"session_id": request.session_id})
+        
+        if not chat_session:
+            # Create new session
+            chat_session = {
+                "session_id": request.session_id,
+                "created_at": datetime.utcnow(),
+                "messages": [],
+                "context_type": request.context_type
+            }
+            await db.chat_sessions.insert_one(chat_session)
+        
+        # Add user message to history
+        user_message = {
+            "type": "user",
+            "content": request.message,
+            "timestamp": datetime.utcnow()
+        }
+        
+        await db.chat_sessions.update_one(
+            {"session_id": request.session_id},
+            {"$push": {"messages": user_message}}
+        )
+        
+        # Get recent message history for context
+        recent_messages = chat_session.get("messages", [])[-10:]  # Last 10 messages
+        
+        # Build conversation context
+        conversation_history = ""
+        for msg in recent_messages:
+            role = "User" if msg["type"] == "user" else "Assistant"
+            conversation_history += f"{role}: {msg['content']}\n"
+        
+        # Create comprehensive prompt for food and health assistance
+        system_prompt = """You are an expert AI nutrition and health assistant. You help users with:
+
+1. Food and Nutrition Questions: Nutritional information, meal planning, dietary advice
+2. Health Tips: General wellness advice, healthy eating habits, lifestyle recommendations  
+3. Food Recommendations: Meal suggestions based on dietary needs, restrictions, or preferences
+4. Food Logging Integration: Help users understand how to log foods and track nutrition
+
+Guidelines:
+- Provide accurate, evidence-based information
+- Be helpful, friendly, and encouraging
+- Ask clarifying questions when needed
+- Suggest practical, actionable advice
+- For complex medical questions, recommend consulting healthcare professionals
+- Keep responses concise but informative
+- Focus on food, nutrition, and general health topics
+
+When appropriate, you can suggest quick actions like:
+- "Log this food item" - for foods discussed
+- "Get meal suggestions" - when discussing meal planning
+- "Learn more about nutrition" - for educational content
+
+Current conversation:
+{conversation_history}
+
+User's new message: {user_message}
+
+Provide a helpful, informative response about food, nutrition, or health."""
+
+        prompt = system_prompt.format(
+            conversation_history=conversation_history,
+            user_message=request.message
+        )
+
+        # Call Gemini API
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_api_key}"
+        
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.7,
+                "topK": 40,
+                "topP": 0.95,
+                "maxOutputTokens": 1024
+            }
+        }
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, headers=headers)
+            
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to get AI response")
+
+        result = response.json()
+        
+        if not result.get('candidates') or not result['candidates'][0].get('content'):
+            raise HTTPException(status_code=500, detail="Invalid AI response format")
+
+        ai_response = result['candidates'][0]['content']['parts'][0]['text']
+
+        # Generate contextual suggestions based on the response
+        suggestions = []
+        quick_actions = []
+        
+        # Analyze response for food-related content
+        response_lower = ai_response.lower()
+        if any(word in response_lower for word in ['food', 'meal', 'eat', 'nutrition', 'diet']):
+            suggestions.extend([
+                "What are some healthy meal ideas?",
+                "How can I track my nutrition better?",
+                "Tell me about portion sizes"
+            ])
+            
+        if any(word in response_lower for word in ['calories', 'protein', 'carbs', 'fat']):
+            quick_actions.append({
+                "type": "nutrition_info",
+                "label": "Learn more about nutrition",
+                "action": "get_nutrition_tips"
+            })
+            
+        if any(word in response_lower for word in ['breakfast', 'lunch', 'dinner', 'snack']):
+            quick_actions.append({
+                "type": "meal_suggestion",
+                "label": "Get meal suggestions",
+                "action": "get_meal_suggestions"
+            })
+
+        # Store AI response
+        ai_message = {
+            "type": "assistant",
+            "content": ai_response,
+            "timestamp": datetime.utcnow(),
+            "suggestions": suggestions[:3],  # Limit to 3 suggestions
+            "quick_actions": quick_actions[:2]  # Limit to 2 quick actions
+        }
+        
+        await db.chat_sessions.update_one(
+            {"session_id": request.session_id},
+            {"$push": {"messages": ai_message}}
+        )
+
+        return ChatResponse(
+            response=ai_response,
+            session_id=request.session_id,
+            suggestions=suggestions[:3],
+            quick_actions=quick_actions[:2],
+            confidence=0.85
+        )
+
+    except Exception as e:
+        logger.error(f"Chat error: {str(e)}")
+        # Return a helpful fallback response
+        fallback_responses = [
+            "I'm here to help with your nutrition and health questions! Could you tell me more about what you'd like to know?",
+            "I can assist you with food recommendations, nutrition advice, and health tips. What specific topic interests you?",
+            "Feel free to ask me about healthy eating, meal planning, or any nutrition-related questions you have!"
+        ]
+        
+        import random
+        fallback_response = random.choice(fallback_responses)
+        
+        return ChatResponse(
+            response=fallback_response,
+            session_id=request.session_id,
+            suggestions=["What's a healthy breakfast?", "How do I eat more vegetables?", "Tell me about portion control"],
+            quick_actions=[],
+            confidence=0.5
+        )
+
+@api_router.get("/chat/history/{session_id}")
+async def get_chat_history(session_id: str):
+    """Get chat history for a session"""
+    try:
+        chat_session = await db.chat_sessions.find_one({"session_id": session_id})
+        
+        if not chat_session:
+            return {"messages": [], "session_id": session_id}
+        
+        return {
+            "messages": chat_session.get("messages", []),
+            "session_id": session_id,
+            "created_at": chat_session.get("created_at"),
+            "context_type": chat_session.get("context_type", "health_and_nutrition")
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting chat history: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get chat history: {str(e)}")
+
+@api_router.post("/chat/start-session")
+async def start_chat_session():
+    """Start a new chat session"""
+    try:
+        session_id = f"chat_{int(datetime.utcnow().timestamp())}_{random.randint(1000, 9999)}"
+        
+        chat_session = {
+            "session_id": session_id,
+            "created_at": datetime.utcnow(),
+            "messages": [],
+            "context_type": "health_and_nutrition"
+        }
+        
+        await db.chat_sessions.insert_one(chat_session)
+        
+        return {
+            "session_id": session_id,
+            "message": "Chat session started successfully",
+            "welcome_message": "Hi! I'm your AI nutrition assistant. I can help you with food questions, health tips, and recommendations. What would you like to know?"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error starting chat session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start chat session: {str(e)}")
+
 # Include the router in the main app (after all endpoints are defined)
 app.include_router(api_router)
 
