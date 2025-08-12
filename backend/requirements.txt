@@ -43,6 +43,9 @@ httpx>=0.27.0
 distro>=1.8.0
 PyYAML>=6.0
 
+# Enhanced AI and NLP capabilities
+textstat==0.7.3
+
 # Additional dependencies for Phase 4 Food Logging Features
 proto-plus>=1.22.0
 httplib2>=0.22.0
