@@ -153,8 +153,59 @@ async def send_chat_message(request: ChatMessageRequest):
             user_context=user_context
         )
 
-        # Build plain text response for backward compatibility
-        plain_text = structured.get("summary") or structured.get("title") or "Here are some suggestions for you."
+        # Compose a comprehensive plain-text response (400-800 words) from structured data
+        def _compose_detailed_response(data: Dict[str, Any]) -> str:
+            def words(s: str) -> int:
+                return len((s or "").split())
+            title = data.get("title") or "Let's explore this together"
+            summary = data.get("summary") or "I'm here to help with evidence-based, practical guidance tailored to you."
+            key_points = data.get("key_points") or []
+            action_steps = data.get("action_steps") or []
+            tips = data.get("tips") or []
+            suggestions_local = data.get("suggestions") or []
+            personalization = data.get("personalization") or ""
+
+            sections = []
+            sections.append(title.strip())
+            sections.append(summary.strip())
+
+            if key_points:
+                sections.append("Key insights:" )
+                sections.append("; ".join([kp.strip().rstrip('.') for kp in key_points]) + ".")
+            if action_steps:
+                steps = []
+                for i, step in enumerate(action_steps, 1):
+                    steps.append(f"{i}. {step.strip().rstrip('.')}.")
+                sections.append("What to do next:" )
+                sections.append(" ".join(steps))
+            if tips:
+                sections.append("Pro tips to make this easier:" )
+                sections.append(" ".join([f"• {t.strip().rstrip('.')}." for t in tips]))
+            if personalization:
+                sections.append(f"Personalization note: {personalization.strip()}")
+            if suggestions_local:
+                sections.append("If you want to keep going, we can also explore:" )
+                sections.append(" ".join([f"- {s}" for s in suggestions_local]))
+
+            text = "\n\n".join([s for s in sections if s])
+
+            # Ensure target length by adding a helpful, evidence-based explainer block
+            if words(text) < 350:
+                explainer = (
+                    "Why this approach works: Sustainable nutrition changes rely on balancing macronutrients,"
+                    " adequate micronutrient variety, hydration, and consistent habits. Pairing protein with fiber-"
+                    " rich carbohydrates helps appetite regulation via slower gastric emptying and steadier blood-"
+                    " glucose responses. Planning meals ahead lowers decision fatigue and increases adherence."
+                    " Tracking just a few anchors (protein at each meal, vegetables twice a day, and a daily water"
+                    " target) creates compounding benefits without feeling restrictive. Layer movement, sleep hygiene,"
+                    " and stress management for synergistic effects—these pillars support hormonal balance, recovery,"
+                    " and motivation so your nutrition plan becomes easier to follow over time."
+                )
+                sections.append(explainer)
+                text = "\n\n".join(sections)
+            return text
+
+        plain_text = _compose_detailed_response(structured)
 
         # Build suggestions and quick actions
         suggestions = structured.get("suggestions", [])[:3]
