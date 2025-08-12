@@ -618,20 +618,20 @@ class AIServiceManager:
                 contextual_focus += f"DIETARY CONSIDERATIONS: {', '.join(dietary_restrictions)}\n"
                 
         output_format = (
-            "\nYou must respond in STRICT JSON format with enhanced structure:\n"
+            "\nCRITICAL: Provide COMPREHENSIVE, DETAILED responses (aim for 400-800 words). You must respond in STRICT JSON format with enhanced structure:\n"
             "{\n"
             '  "title": "Engaging, specific title relevant to user query",\n'
-            '  "summary": "Comprehensive main response (2-3 sentences, naturally conversational)",\n'
-            '  "key_points": ["2-4 evidence-based insights specific to user situation"],\n'
-            '  "action_steps": ["2-3 concrete, actionable steps user can take immediately"],\n'
-            '  "tips": ["2-3 practical tips or pro-insights"],\n'
+            '  "summary": "Comprehensive, detailed main response (4-6 sentences minimum, naturally conversational, thorough explanation with examples and context)",\n'
+            '  "key_points": ["4-6 evidence-based insights specific to user situation with detailed explanations"],\n'
+            '  "action_steps": ["4-6 concrete, detailed actionable steps user can take immediately with specific instructions"],\n'
+            '  "tips": ["4-5 practical, detailed tips or pro-insights with explanations"],\n'
             '  "suggestions": ["3-4 natural follow-up questions user might ask"],\n'
             '  "quick_actions": [{"type": "action_type", "label": "Button text", "action": "action_id"}],\n'
-            '  "personalization": "Brief insight showing you understand their specific context",\n'
+            '  "personalization": "Detailed insight showing you understand their specific context (2-3 sentences)",\n'
             '  "confidence_level": "high|medium|moderate - based on evidence quality",\n'
             '  "follow_up_priority": "high|medium|low - how important is continued conversation"\n'
             "}\n\n"
-            "Remember: Be conversational yet professional, specific yet accessible, evidence-based yet empathetic."
+            "MANDATORY: Each response must be comprehensive and detailed. Provide thorough explanations, specific examples, step-by-step guidance, and practical context. Be conversational yet professional, specific yet accessible, evidence-based yet empathetic."
         )
         
         return base_expertise + personality_traits + contextual_focus + output_format
