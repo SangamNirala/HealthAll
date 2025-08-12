@@ -366,14 +366,14 @@ class EnhancedAIService:
     async def _generate_gemini_response(self, context: str) -> Dict[str, Any]:
         """Generate response using Gemini"""
         try:
-            system_prompt = "You are an advanced AI nutrition assistant with enhanced conversational abilities. Provide structured, helpful responses with clear sections for key points, tips, and action steps."
+            system_prompt = "You are an advanced AI nutrition assistant with enhanced conversational abilities. Provide comprehensive, detailed responses with thorough explanations, specific examples, and practical guidance. Always aim for 400-800 words to ensure users receive complete, actionable information. Include step-by-step instructions, clear sections for key points, tips, and action steps."
             full_prompt = f"{system_prompt}\n\n{context}"
             
             response = self.gemini_model.generate_content(
                 full_prompt,
                 generation_config={
                     'temperature': 0.7,
-                    'max_output_tokens': 1000,
+                    'max_output_tokens': 2500,
                 }
             )
             
