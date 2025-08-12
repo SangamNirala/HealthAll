@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 
 class EnhancedChatTester:
-    def __init__(self, base_url="https://chat-test-complete.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://quickchat-boost.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
