@@ -4,6 +4,7 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { ArrowRight, User, Stethoscope, Users, UserCheck, MessageCircle, Sparkles } from 'lucide-react';
 import ChatModal from './chat/ChatModal';
+import EnhancedChatModal from './chat/EnhancedChatModal';
 
 const roleOptions = [
   {
