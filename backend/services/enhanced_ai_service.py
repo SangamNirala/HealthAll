@@ -395,10 +395,10 @@ class EnhancedAIService:
             data = {
                 "model": "openai/gpt-4",
                 "messages": [
-                    {"role": "system", "content": "You are an advanced AI nutrition assistant with enhanced conversational abilities. Provide structured, helpful responses."},
+                    {"role": "system", "content": "You are an advanced AI nutrition assistant with enhanced conversational abilities. Provide comprehensive, detailed responses with thorough explanations, specific examples, and practical guidance. Always aim for 400-800 words to ensure users receive complete, actionable information. Include step-by-step instructions and detailed recommendations."},
                     {"role": "user", "content": context}
                 ],
-                "max_tokens": 1000,
+                "max_tokens": 2500,
                 "temperature": 0.7
             }
             
