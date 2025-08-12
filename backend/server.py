@@ -61,6 +61,24 @@ class UserProfile(BaseModel):
 
 # ... many other route and model definitions above ...
 
+# Enhanced Chat API Models
+class EnhancedChatMessageRequest(BaseModel):
+    session_id: str
+    content: str
+    type: str = "text"  # text, voice, image, multimodal
+    user_context: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = {}
+
+class EnhancedChatResponse(BaseModel):
+    session_id: str
+    message_id: str = None
+    response: str
+    structured_data: Dict[str, Any] = {}
+    suggestions: List[str] = []
+    quick_actions: List[Dict[str, str]] = []
+    conversation_insights: Dict[str, Any] = {}
+    metadata: Dict[str, Any] = {}
+
 # Chat API Models
 class ChatMessageRequest(BaseModel):
     session_id: str
