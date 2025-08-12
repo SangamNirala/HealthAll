@@ -349,10 +349,10 @@ class EnhancedAIService:
             response = await self.groq_client.chat.completions.create(
                 model="llama-3.1-70b-versatile",
                 messages=[
-                    {"role": "system", "content": "You are an advanced AI nutrition assistant with enhanced conversational abilities. Provide structured, helpful responses."},
+                    {"role": "system", "content": "You are an advanced AI nutrition assistant with enhanced conversational abilities. Provide comprehensive, detailed responses with thorough explanations. Always aim for 400-800 words to ensure users receive complete, actionable guidance. Include specific examples, step-by-step instructions, and practical tips."},
                     {"role": "user", "content": context}
                 ],
-                max_tokens=1000,
+                max_tokens=2500,
                 temperature=0.7
             )
             
