@@ -933,7 +933,7 @@ CRITICAL: Respond with sophisticated, contextually-aware JSON that demonstrates 
                         {"role": "system", "content": system_instruction},
                         {"role": "user", "content": user_prompt},
                     ],
-                    max_tokens=1000,
+                    max_tokens=2500,
                     temperature=0.65,
                 )
                 content = resp.choices[0].message.content
