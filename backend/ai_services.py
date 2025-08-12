@@ -872,7 +872,7 @@ Respond in the specified JSON format with enhanced personalization and context a
                         {"role": "system", "content": system_instruction},
                         {"role": "user", "content": user_prompt},
                     ],
-                    max_tokens=1200,  # Increased for richer responses
+                    max_tokens=2500,  # Increased for detailed, comprehensive responses
                     temperature=temperature,
                 )
                 content = completion.choices[0].message.content
