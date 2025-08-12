@@ -962,7 +962,7 @@ Provide contextually-aware JSON response:
 """
                 content = self.hf_client.text_generation(
                     enhanced_hf_prompt, 
-                    max_new_tokens=800, 
+                    max_new_tokens=2000, 
                     temperature=0.7,
                     do_sample=True
                 )
