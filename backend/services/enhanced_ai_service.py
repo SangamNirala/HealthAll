@@ -294,15 +294,19 @@ class EnhancedAIService:
             "",
             f"Current user message: {message}",
             "",
-            "INSTRUCTIONS:",
-            "1. Respond according to the specified personality",
-            "2. Consider the user's sentiment and emotional state", 
-            "3. Provide actionable, helpful advice for nutrition and health",
-            "4. Include specific suggestions and next steps",
-            "5. Be empathetic and understanding",
-            "6. If the user seems upset, be extra supportive",
-            "7. Reference previous conversation topics when relevant",
-            "8. Provide structured response with key points, tips, and action steps"
+            "INSTRUCTIONS FOR DETAILED RESPONSE:",
+            "1. Provide comprehensive, detailed responses (minimum 3-4 paragraphs)",
+            "2. Include specific examples, practical tips, and actionable steps",
+            "3. Explain the 'why' behind recommendations, not just the 'what'",
+            "4. Address multiple aspects of the user's question thoroughly",
+            "5. Provide step-by-step guidance where applicable",
+            "6. Include relevant context and background information",
+            "7. Offer specific meal ideas, recipes, or food suggestions when relevant",
+            "8. Consider the user's sentiment and emotional state with empathy", 
+            "9. Reference previous conversation topics when relevant",
+            "10. Structure response with clear sections: overview, detailed explanation, specific recommendations, and next steps",
+            "11. Aim for 400-800 words to ensure thoroughness",
+            "12. Use bullet points, lists, and clear formatting for readability"
         ])
         
         return "\n".join(context_parts)
