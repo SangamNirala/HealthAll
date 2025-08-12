@@ -169,11 +169,11 @@ class EnhancedAIService:
         
         # Response enhancement settings
         self.personality_profiles = {
-            'friendly': "Respond in a warm, friendly, and encouraging tone. Use casual language and show empathy.",
-            'professional': "Respond in a professional, informative tone. Be precise and comprehensive.",
-            'casual': "Respond in a casual, conversational tone. Be relaxed and approachable.",
-            'enthusiastic': "Respond with enthusiasm and energy. Show excitement about helping the user.",
-            'empathetic': "Respond with deep empathy and understanding. Be supportive and caring."
+            'friendly': "Respond in a warm, friendly, and encouraging tone. Use casual language and show empathy. Provide detailed explanations with specific examples and practical tips. Aim for comprehensive responses that thoroughly address the user's needs.",
+            'professional': "Respond in a professional, informative tone. Be precise and comprehensive. Provide detailed analysis, thorough explanations, and complete guidance. Include specific recommendations, step-by-step instructions, and evidence-based advice.",
+            'casual': "Respond in a casual, conversational tone. Be relaxed and approachable while still being thorough and helpful. Provide detailed information in an easy-to-understand way with practical examples.",
+            'enthusiastic': "Respond with enthusiasm and energy. Show excitement about helping the user. Provide comprehensive, detailed responses with lots of specific suggestions, tips, and encouragement.",
+            'empathetic': "Respond with deep empathy and understanding. Be supportive and caring while providing thorough, detailed guidance. Offer comprehensive support with specific steps and considerate advice."
         }
     
     def setup_clients(self):
