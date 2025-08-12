@@ -264,6 +264,221 @@ async def start_chat_session():
         logging.getLogger(__name__).error(f"Error starting chat session: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to start chat session: {str(e)}")
 
+# Enhanced Chat API Endpoints
+@api_router.post("/chat/enhanced/send-message")
+async def send_enhanced_chat_message(request: EnhancedChatMessageRequest):
+    """Send enhanced message with multimodal support and advanced AI features"""
+    try:
+        # Import enhanced chat service
+        from services.enhanced_chat_service import get_enhanced_chat_service
+        
+        enhanced_chat = get_enhanced_chat_service(db)
+        
+        # Process message with enhanced capabilities
+        message_data = {
+            'type': request.type,
+            'content': request.content,
+            'user_context': request.user_context,
+            'metadata': request.metadata
+        }
+        
+        response = await enhanced_chat.process_message(request.session_id, message_data)
+        
+        return EnhancedChatResponse(**response)
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Enhanced chat error: {str(e)}")
+        # Fallback to regular chat
+        try:
+            regular_request = ChatMessageRequest(
+                session_id=request.session_id,
+                message=request.content,
+                user_context=request.user_context
+            )
+            fallback_response = await send_chat_message(regular_request)
+            
+            return EnhancedChatResponse(
+                session_id=fallback_response.session_id,
+                response=fallback_response.response,
+                suggestions=fallback_response.suggestions,
+                quick_actions=fallback_response.quick_actions,
+                metadata={'fallback': True, 'error': str(e)}
+            )
+        except:
+            raise HTTPException(status_code=500, detail=f"Enhanced chat failed: {str(e)}")
+
+@api_router.get("/chat/enhanced/analytics/{session_id}")
+async def get_enhanced_chat_analytics(session_id: str):
+    """Get detailed conversation analytics and insights"""
+    try:
+        from services.enhanced_chat_service import get_enhanced_chat_service
+        
+        enhanced_chat = get_enhanced_chat_service(db)
+        analytics = await enhanced_chat.get_conversation_analytics(session_id)
+        
+        return analytics
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error getting chat analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
+
+@api_router.post("/chat/enhanced/voice-process")
+async def process_voice_message(session_id: str = None, transcript: str = None, 
+                               confidence: float = None, language: str = "en"):
+    """Process voice message with speech-to-text integration"""
+    try:
+        from services.enhanced_chat_service import get_enhanced_chat_service
+        
+        enhanced_chat = get_enhanced_chat_service(db)
+        
+        message_data = {
+            'type': 'voice',
+            'content': transcript,
+            'user_context': {},
+            'metadata': {
+                'confidence': confidence,
+                'language': language
+            }
+        }
+        
+        response = await enhanced_chat.process_message(session_id, message_data)
+        return response
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Voice processing error: {e}")
+        raise HTTPException(status_code=500, detail=f"Voice processing failed: {str(e)}")
+
+@api_router.post("/chat/enhanced/image-process")
+async def process_image_message(request: dict):
+    """Process image message with visual analysis"""
+    try:
+        from services.enhanced_chat_service import get_enhanced_chat_service
+        
+        enhanced_chat = get_enhanced_chat_service(db)
+        
+        message_data = {
+            'type': 'image',
+            'content': request.get('caption', ''),
+            'user_context': request.get('user_context', {}),
+            'metadata': {
+                'image_data': request.get('image_data'),
+                'format': request.get('format', 'base64')
+            }
+        }
+        
+        response = await enhanced_chat.process_message(request.get('session_id'), message_data)
+        return response
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Image processing error: {e}")
+        raise HTTPException(status_code=500, detail=f"Image processing failed: {str(e)}")
+
+@api_router.get("/chat/enhanced/conversation/{session_id}")
+async def get_enhanced_conversation(session_id: str, thread_id: str = None):
+    """Get enhanced conversation with threading support"""
+    try:
+        from services.enhanced_chat_service import get_enhanced_chat_service
+        from services.conversation_manager import ConversationManager
+        
+        conversation_manager = ConversationManager(db)
+        conversation = await conversation_manager.get_conversation(session_id, thread_id)
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        return conversation
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error getting enhanced conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get conversation: {str(e)}")
+
+@api_router.post("/chat/enhanced/conversation/{session_id}/preferences")
+async def update_conversation_preferences(session_id: str, preferences: dict):
+    """Update conversation preferences and settings"""
+    try:
+        from services.conversation_manager import ConversationManager
+        
+        conversation_manager = ConversationManager(db)
+        await conversation_manager.update_conversation_preferences(session_id, preferences)
+        
+        return {"success": True, "message": "Preferences updated successfully"}
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error updating preferences: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update preferences: {str(e)}")
+
+@api_router.post("/chat/enhanced/conversation/{session_id}/tag")
+async def tag_conversation(session_id: str, tags: List[str]):
+    """Add tags to conversation for organization"""
+    try:
+        from services.conversation_manager import ConversationManager
+        
+        conversation_manager = ConversationManager(db)
+        await conversation_manager.tag_conversation(session_id, tags)
+        
+        return {"success": True, "message": "Tags added successfully"}
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error tagging conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to tag conversation: {str(e)}")
+
+@api_router.get("/chat/enhanced/search")
+async def search_conversations(user_id: str = None, query: str = None, 
+                              tags: str = None, start_date: str = None, end_date: str = None):
+    """Search conversations with advanced filtering"""
+    try:
+        from services.conversation_manager import ConversationManager
+        
+        conversation_manager = ConversationManager(db)
+        
+        # Parse parameters
+        tag_list = tags.split(',') if tags else None
+        date_range = {}
+        if start_date:
+            date_range['start'] = datetime.fromisoformat(start_date)
+        if end_date:
+            date_range['end'] = datetime.fromisoformat(end_date)
+        
+        conversations = await conversation_manager.search_conversations(
+            user_id=user_id,
+            query=query,
+            tags=tag_list,
+            date_range=date_range if date_range else None
+        )
+        
+        return {"conversations": conversations}
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error searching conversations: {e}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@api_router.get("/chat/enhanced/analytics/aggregate")
+async def get_aggregate_chat_analytics(user_id: str = None, start_date: str = None, end_date: str = None):
+    """Get aggregated chat analytics across multiple conversations"""
+    try:
+        from services.conversation_manager import ConversationManager
+        
+        conversation_manager = ConversationManager(db)
+        
+        date_range = {}
+        if start_date:
+            date_range['start'] = datetime.fromisoformat(start_date)
+        if end_date:
+            date_range['end'] = datetime.fromisoformat(end_date)
+        
+        analytics = await conversation_manager.get_conversation_analytics(
+            user_id=user_id,
+            date_range=date_range if date_range else None
+        )
+        
+        return analytics
+        
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Error getting aggregate analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
+
 # Include the router in the main app (after all endpoints are defined)
 app.include_router(api_router)
 
