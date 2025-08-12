@@ -261,11 +261,18 @@ const RoleSelection = () => {
         </div>
       </div>
 
-      {/* Chat Modal */}
-      <ChatModal
-        isOpen={showQuickChat}
-        onClose={() => setShowQuickChat(false)}
-      />
+      {/* Enhanced Chat Modal */}
+      {useEnhancedChat ? (
+        <EnhancedChatModal
+          isOpen={showQuickChat}
+          onClose={() => setShowQuickChat(false)}
+        />
+      ) : (
+        <ChatModal
+          isOpen={showQuickChat}
+          onClose={() => setShowQuickChat(false)}
+        />
+      )}
     </div>
   );
 };
