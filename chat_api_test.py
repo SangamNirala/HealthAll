@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 
 class ChatAPITester:
-    def __init__(self, base_url="https://ai-chat-fusion.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://chat-enhancer.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
