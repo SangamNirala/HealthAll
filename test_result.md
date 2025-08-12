@@ -406,6 +406,18 @@ frontend:
         comment: "AI INTEGRATION ENDPOINTS VERIFICATION COMPLETE: ✅ ALL TESTS PASSED (3/3 - 100% success rate) - Comprehensive verification confirms all AI endpoints still working correctly after dependency updates. POST /api/ai/food-recognition: ✅ Successfully processes base64 image data, returns proper response structure with foods array, confidence scores, and insights. Handles image processing without dependency errors. POST /api/ai/voice-command: ✅ Successfully processes voice transcripts, returns structured foodItems array with detailed nutrition data (calories, protein, carbs, fat), intent recognition, and clarifications. Voice processing working correctly. POST /api/ai/meal-suggestions: ✅ Successfully generates personalized meal suggestions with proper request structure (including nutritionHistory and healthGoals), returns suggestions array with detailed meal information, reasoning, and nutritionalBenefits. All AI services (Gemini, Groq) functioning correctly with no dependency issues. Backend AI integration is stable and production-ready after dependency updates."
 
 backend:
+  - task: "Chat API - Long Response Composition"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Implemented comprehensive plain-text composer in /api/chat/send-message that stitches together structured JSON fields (summary, key_points, action_steps, tips, suggestions, personalization) returned by AIServiceManager into a single detailed response (target 400-800 words). Added explanatory evidence block if content under threshold. Should fix short 2-line replies seen in 'Quick Chat'. Ready for backend testing using chat_test.py."
+
   - task: "Role-Specific API Endpoints"
     implemented: true
     working: true
