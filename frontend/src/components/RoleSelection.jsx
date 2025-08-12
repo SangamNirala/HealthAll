@@ -206,6 +206,7 @@ const RoleCard = ({ role, index, onQuickChat }) => {
 
 const RoleSelection = () => {
   const [showQuickChat, setShowQuickChat] = useState(false);
+  const [useEnhancedChat, setUseEnhancedChat] = useState(true); // Toggle for enhanced features
 
   return (
     <div className="min-h-screen gradient-hero">
