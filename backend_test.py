@@ -7375,6 +7375,10 @@ class HealthPlatformAPITester:
         chat_api_success = self.test_enhanced_chat_api_endpoints()
         ai_service_success = self.test_ai_service_integration()
         
+        # Test Enhanced Chat Detailed Responses (REVIEW REQUEST)
+        print("\n📋 Testing Enhanced Chat Detailed Responses (REVIEW REQUEST)...")
+        enhanced_chat_detailed_success = self.test_enhanced_chat_detailed_responses()
+        
         # Test basic API
         print("\n📋 Testing Basic API...")
         self.test_basic_api()
