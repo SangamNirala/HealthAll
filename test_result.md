@@ -57,8 +57,8 @@
 ##   test_priority: "high_first"  # or "sequential" or "stuck_first"
 ##
 ## agent_communication:
-##     -agent: "main"  # or "testing" or "user"
-##     -message: "Communication message between agents"
+##     -agent: "main"
+##     -message: "Ready to execute Phase 1A re-testing of Patient Management System endpoints. Main agent has reportedly fixed Pydantic model validation issues (PatientAssignment ai_match_score field, PatientRiskAnalysis risk_level/risk_score fields, progress tracking structure changes, missing reasoning field). Will proceed with comprehensive backend testing of Smart Patient Assignment APIs, Patient Risk Analysis APIs, and Main Dashboard API to validate these fixes."
 
 # Protocol Guidelines for Main agent
 #
