@@ -11,7 +11,7 @@ def main():
     print("🚀 Starting Phase 4.1 Enhanced Clinical Dashboard Re-Testing...")
     
     # Initialize tester with the correct backend URL
-    tester = HealthPlatformAPITester("https://patient-phase1.preview.emergentagent.com/api")
+    tester = HealthPlatformAPITester("https://caretrack-test.preview.emergentagent.com/api")
     
     # Run only the Phase 4.1 specific test
     success = tester.test_phase41_clinical_dashboard_retesting_specific()
