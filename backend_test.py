@@ -8302,6 +8302,464 @@ class HealthPlatformAPITester:
         
         return overall_success
 
+    def test_patient_management_system_endpoints(self):
+        """Test Patient Management System endpoints - Phase 1A Re-testing"""
+        print("\n🏥 Testing Patient Management System Endpoints (Phase 1A Re-testing)...")
+        
+        # Test Smart Patient Assignment APIs
+        assignment_success = self.test_smart_patient_assignment_apis()
+        
+        # Test Patient Risk Analysis APIs
+        risk_analysis_success = self.test_patient_risk_analysis_apis()
+        
+        # Test Main Dashboard API
+        dashboard_success = self.test_main_dashboard_api()
+        
+        return assignment_success and risk_analysis_success and dashboard_success
+
+    def test_smart_patient_assignment_apis(self):
+        """Test Smart Patient Assignment APIs with AI matching"""
+        print("\n📋 Testing Smart Patient Assignment APIs...")
+        
+        provider_id = "provider-123"
+        patient_id = "patient-456"
+        
+        # Test 1: POST /api/provider/patient-management/assignments - Create patient assignment
+        assignment_data = {
+            "patient_id": patient_id,
+            "provider_id": provider_id,
+            "assignment_type": "routine",
+            "priority": "MEDIUM",
+            "assignment_reason": "Regular diabetes management checkup",
+            "estimated_duration": 45,
+            "scheduled_time": (datetime.utcnow() + timedelta(days=1)).isoformat(),
+            "patient_condition": "Type 2 Diabetes Mellitus",
+            "required_expertise": ["endocrinology", "diabetes_management"],
+            "special_instructions": "Patient prefers morning appointments, requires blood glucose monitoring"
+        }
+        
+        success1, assignment_response = self.run_test(
+            "Create Patient Assignment with AI Matching",
+            "POST",
+            "provider/patient-management/assignments",
+            200,
+            data=assignment_data
+        )
+        
+        # Validate assignment response structure and ai_match_score
+        assignment_id = None
+        if success1 and assignment_response:
+            expected_keys = ['id', 'patient_id', 'provider_id', 'ai_match_score', 'assignment_reason', 'patient_condition']
+            missing_keys = [key for key in expected_keys if key not in assignment_response]
+            if not missing_keys:
+                print(f"   ✅ Assignment response contains all required keys: {expected_keys}")
+                
+                # Validate ai_match_score field (0.0-1.0 range)
+                ai_match_score = assignment_response.get('ai_match_score', -1)
+                if 0.0 <= ai_match_score <= 1.0:
+                    print(f"   ✅ AI match score validation: {ai_match_score} (valid range 0.0-1.0)")
+                else:
+                    print(f"   ❌ AI match score validation failed: {ai_match_score} (should be 0.0-1.0)")
+                    success1 = False
+                
+                assignment_id = assignment_response.get('id')
+                print(f"   📝 Assignment created with ID: {assignment_id}")
+                print(f"   🤖 AI Match Score: {ai_match_score}")
+                print(f"   🏥 Condition: {assignment_response.get('patient_condition')}")
+                print(f"   ⏰ Scheduled: {assignment_response.get('scheduled_time')}")
+            else:
+                print(f"   ❌ Assignment response missing keys: {missing_keys}")
+                success1 = False
+        
+        # Test 2: GET /api/provider/patient-management/assignments/{provider_id} - Retrieve assignments
+        success2, assignments_response = self.run_test(
+            "Retrieve Patient Assignments",
+            "GET",
+            f"provider/patient-management/assignments/{provider_id}",
+            200
+        )
+        
+        # Validate assignments retrieval
+        if success2 and assignments_response:
+            if isinstance(assignments_response, list):
+                print(f"   ✅ Retrieved {len(assignments_response)} assignments")
+                if len(assignments_response) > 0:
+                    assignment = assignments_response[0]
+                    required_fields = ['id', 'patient_id', 'provider_id', 'ai_match_score', 'status']
+                    missing_fields = [field for field in required_fields if field not in assignment]
+                    if not missing_fields:
+                        print(f"   ✅ Assignment structure valid")
+                        print(f"   📊 Sample assignment: {assignment['patient_id']} -> {assignment['provider_id']} (Score: {assignment['ai_match_score']})")
+                    else:
+                        print(f"   ❌ Assignment missing fields: {missing_fields}")
+                        success2 = False
+            else:
+                print(f"   ❌ Expected list of assignments, got: {type(assignments_response)}")
+                success2 = False
+        
+        # Test 3: PUT /api/provider/patient-management/assignments/{assignment_id} - Update assignment status
+        if assignment_id:
+            update_data = {
+                "status": "ACTIVE",
+                "assignment_notes": "Patient confirmed appointment, ready to proceed with treatment plan"
+            }
+            
+            success3, update_response = self.run_test(
+                "Update Assignment Status",
+                "PUT",
+                f"provider/patient-management/assignments/{assignment_id}",
+                200,
+                data=update_data
+            )
+            
+            # Validate status update
+            if success3 and update_response:
+                updated_status = update_response.get('status')
+                if updated_status == "ACTIVE":
+                    print(f"   ✅ Assignment status updated to: {updated_status}")
+                    print(f"   📝 Notes: {update_response.get('assignment_notes', 'N/A')}")
+                else:
+                    print(f"   ❌ Status update failed. Expected 'ACTIVE', got: {updated_status}")
+                    success3 = False
+        else:
+            success3 = False
+            print(f"   ❌ Cannot test status update - no assignment ID available")
+        
+        # Test 4: POST /api/provider/patient-management/ai-matching - AI-powered patient matching
+        ai_matching_data = {
+            "provider_id": provider_id,
+            "patient_conditions": ["diabetes", "hypertension"],
+            "required_expertise": ["endocrinology", "cardiology"],
+            "workload_preference": "balanced",
+            "availability_window": {
+                "start_time": "09:00",
+                "end_time": "17:00",
+                "days": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+            },
+            "priority_threshold": "MEDIUM"
+        }
+        
+        success4, matching_response = self.run_test(
+            "AI-Powered Patient Matching",
+            "POST",
+            "provider/patient-management/ai-matching",
+            200,
+            data=ai_matching_data
+        )
+        
+        # Validate AI matching response and check for 'reasoning' field
+        if success4 and matching_response:
+            expected_keys = ['matches', 'reasoning', 'confidence_score']
+            missing_keys = [key for key in expected_keys if key not in matching_response]
+            if not missing_keys:
+                print(f"   ✅ AI matching response contains all required keys: {expected_keys}")
+                
+                # Validate reasoning field (previously missing)
+                reasoning = matching_response.get('reasoning', '')
+                if reasoning and len(reasoning) > 0:
+                    print(f"   ✅ Reasoning field present and populated")
+                    print(f"   🧠 AI Reasoning: {reasoning[:100]}...")
+                else:
+                    print(f"   ❌ Reasoning field missing or empty")
+                    success4 = False
+                
+                # Validate matches structure
+                matches = matching_response.get('matches', [])
+                if matches and len(matches) > 0:
+                    match = matches[0]
+                    match_keys = ['patient_id', 'match_score', 'compatibility_factors']
+                    missing_match_keys = [key for key in match_keys if key not in match]
+                    if not missing_match_keys:
+                        print(f"   ✅ Match structure valid - Found {len(matches)} matches")
+                        print(f"   🎯 Top match: Patient {match['patient_id']} (Score: {match['match_score']})")
+                    else:
+                        print(f"   ❌ Match structure missing keys: {missing_match_keys}")
+                        success4 = False
+                
+                # Validate confidence score
+                confidence = matching_response.get('confidence_score', -1)
+                if 0.0 <= confidence <= 1.0:
+                    print(f"   ✅ Confidence score valid: {confidence}")
+                else:
+                    print(f"   ❌ Invalid confidence score: {confidence}")
+                    success4 = False
+            else:
+                print(f"   ❌ AI matching response missing keys: {missing_keys}")
+                success4 = False
+        
+        print(f"\n📊 Smart Patient Assignment API Test Summary:")
+        print(f"   ✅ Create assignment with AI matching: {'PASS' if success1 else 'FAIL'}")
+        print(f"   ✅ Retrieve patient assignments: {'PASS' if success2 else 'FAIL'}")
+        print(f"   ✅ Update assignment status: {'PASS' if success3 else 'FAIL'}")
+        print(f"   ✅ AI-powered patient matching: {'PASS' if success4 else 'FAIL'}")
+        
+        return success1 and success2 and success3 and success4
+
+    def test_patient_risk_analysis_apis(self):
+        """Test Patient Risk Analysis APIs with ML-based risk analysis"""
+        print("\n🔍 Testing Patient Risk Analysis APIs...")
+        
+        provider_id = "provider-123"
+        patient_id = "patient-456"
+        
+        # Test 1: POST /api/provider/patient-management/risk-analysis - Create risk analysis
+        risk_analysis_data = {
+            "patient_id": patient_id,
+            "provider_id": provider_id,
+            "risk_category": "DIABETES",
+            "time_horizon": "30_days"
+        }
+        
+        success1, risk_response = self.run_test(
+            "Create ML-based Risk Analysis",
+            "POST",
+            "provider/patient-management/risk-analysis",
+            200,
+            data=risk_analysis_data
+        )
+        
+        # Validate risk analysis response structure and defaults
+        if success1 and risk_response:
+            expected_keys = ['id', 'patient_id', 'provider_id', 'risk_category', 'risk_level', 'risk_score', 'confidence_interval']
+            missing_keys = [key for key in expected_keys if key not in risk_response]
+            if not missing_keys:
+                print(f"   ✅ Risk analysis response contains all required keys: {expected_keys}")
+                
+                # Validate risk_level field with proper defaults
+                risk_level = risk_response.get('risk_level')
+                valid_risk_levels = ['VERY_LOW', 'LOW', 'MODERATE', 'HIGH', 'VERY_HIGH']
+                if risk_level in valid_risk_levels:
+                    print(f"   ✅ Risk level validation: {risk_level} (valid enum value)")
+                else:
+                    print(f"   ❌ Invalid risk level: {risk_level} (should be one of {valid_risk_levels})")
+                    success1 = False
+                
+                # Validate risk_score field with proper defaults
+                risk_score = risk_response.get('risk_score', -1)
+                if 0.0 <= risk_score <= 1.0:
+                    print(f"   ✅ Risk score validation: {risk_score} (valid range 0.0-1.0)")
+                else:
+                    print(f"   ❌ Invalid risk score: {risk_score} (should be 0.0-1.0)")
+                    success1 = False
+                
+                # Validate ML risk score validation with confidence intervals
+                confidence_interval = risk_response.get('confidence_interval', {})
+                if 'lower' in confidence_interval and 'upper' in confidence_interval:
+                    lower = confidence_interval['lower']
+                    upper = confidence_interval['upper']
+                    if 0.0 <= lower <= upper <= 1.0:
+                        print(f"   ✅ Confidence interval valid: [{lower}, {upper}]")
+                    else:
+                        print(f"   ❌ Invalid confidence interval: [{lower}, {upper}]")
+                        success1 = False
+                else:
+                    print(f"   ❌ Confidence interval missing lower/upper bounds")
+                    success1 = False
+                
+                print(f"   📊 Risk Analysis Results:")
+                print(f"      Category: {risk_response.get('risk_category')}")
+                print(f"      Level: {risk_level}")
+                print(f"      Score: {risk_score}")
+                print(f"      Confidence: [{confidence_interval.get('lower', 'N/A')}, {confidence_interval.get('upper', 'N/A')}]")
+                print(f"      Time Horizon: {risk_response.get('time_horizon', 'N/A')}")
+            else:
+                print(f"   ❌ Risk analysis response missing keys: {missing_keys}")
+                success1 = False
+        
+        # Test 2: GET /api/provider/patient-management/risk-analysis/{patient_id} - Retrieve risk analysis
+        success2, risk_retrieval_response = self.run_test(
+            "Retrieve Patient Risk Analysis",
+            "GET",
+            f"provider/patient-management/risk-analysis/{patient_id}",
+            200
+        )
+        
+        # Validate risk analysis retrieval
+        if success2 and risk_retrieval_response:
+            expected_keys = ['patient_id', 'risk_analyses', 'summary', 'recommendations']
+            missing_keys = [key for key in expected_keys if key not in risk_retrieval_response]
+            if not missing_keys:
+                print(f"   ✅ Risk retrieval response contains all required keys: {expected_keys}")
+                
+                # Validate risk analyses array
+                risk_analyses = risk_retrieval_response.get('risk_analyses', [])
+                if risk_analyses and len(risk_analyses) > 0:
+                    analysis = risk_analyses[0]
+                    analysis_keys = ['id', 'risk_category', 'risk_level', 'risk_score', 'confidence_interval']
+                    missing_analysis_keys = [key for key in analysis_keys if key not in analysis]
+                    if not missing_analysis_keys:
+                        print(f"   ✅ Risk analysis structure valid - Found {len(risk_analyses)} analyses")
+                        print(f"   📈 Latest analysis: {analysis['risk_category']} - {analysis['risk_level']} (Score: {analysis['risk_score']})")
+                    else:
+                        print(f"   ❌ Risk analysis missing keys: {missing_analysis_keys}")
+                        success2 = False
+                
+                # Validate summary and recommendations
+                summary = risk_retrieval_response.get('summary', {})
+                recommendations = risk_retrieval_response.get('recommendations', [])
+                if summary and recommendations:
+                    print(f"   ✅ Summary and recommendations provided")
+                    print(f"   📋 Recommendations count: {len(recommendations)}")
+                else:
+                    print(f"   ⚠️ Summary or recommendations missing")
+            else:
+                print(f"   ❌ Risk retrieval response missing keys: {missing_keys}")
+                success2 = False
+        
+        # Test 3: Test different risk categories
+        cardiovascular_risk_data = {
+            "patient_id": patient_id,
+            "provider_id": provider_id,
+            "risk_category": "CARDIOVASCULAR",
+            "time_horizon": "90_days"
+        }
+        
+        success3, cardio_response = self.run_test(
+            "Create Cardiovascular Risk Analysis",
+            "POST",
+            "provider/patient-management/risk-analysis",
+            200,
+            data=cardiovascular_risk_data
+        )
+        
+        if success3 and cardio_response:
+            risk_category = cardio_response.get('risk_category')
+            if risk_category == "CARDIOVASCULAR":
+                print(f"   ✅ Cardiovascular risk analysis created successfully")
+                print(f"   ❤️ Category: {risk_category}, Level: {cardio_response.get('risk_level')}")
+            else:
+                print(f"   ❌ Unexpected risk category: {risk_category}")
+                success3 = False
+        
+        # Test 4: Test mental health risk analysis
+        mental_health_risk_data = {
+            "patient_id": patient_id,
+            "provider_id": provider_id,
+            "risk_category": "MENTAL_HEALTH",
+            "time_horizon": "7_days"
+        }
+        
+        success4, mental_response = self.run_test(
+            "Create Mental Health Risk Analysis",
+            "POST",
+            "provider/patient-management/risk-analysis",
+            200,
+            data=mental_health_risk_data
+        )
+        
+        if success4 and mental_response:
+            risk_category = mental_response.get('risk_category')
+            if risk_category == "MENTAL_HEALTH":
+                print(f"   ✅ Mental health risk analysis created successfully")
+                print(f"   🧠 Category: {risk_category}, Level: {mental_response.get('risk_level')}")
+            else:
+                print(f"   ❌ Unexpected risk category: {risk_category}")
+                success4 = False
+        
+        print(f"\n📊 Patient Risk Analysis API Test Summary:")
+        print(f"   ✅ Create ML-based risk analysis (Diabetes): {'PASS' if success1 else 'FAIL'}")
+        print(f"   ✅ Retrieve patient risk analysis: {'PASS' if success2 else 'FAIL'}")
+        print(f"   ✅ Create cardiovascular risk analysis: {'PASS' if success3 else 'FAIL'}")
+        print(f"   ✅ Create mental health risk analysis: {'PASS' if success4 else 'FAIL'}")
+        
+        return success1 and success2 and success3 and success4
+
+    def test_main_dashboard_api(self):
+        """Test Main Dashboard API with comprehensive data aggregation"""
+        print("\n📊 Testing Main Dashboard API...")
+        
+        provider_id = "provider-123"
+        
+        # Test: GET /api/provider/patient-management/dashboard/{provider_id} - Main dashboard
+        success1, dashboard_response = self.run_test(
+            "Get Provider Dashboard with Patient Management Data",
+            "GET",
+            f"provider/patient-management/dashboard/{provider_id}",
+            200
+        )
+        
+        # Validate dashboard response structure and progress tracking
+        if success1 and dashboard_response:
+            expected_keys = ['provider_id', 'dashboard_metrics', 'progress_entries', 'recent_assignments', 'risk_alerts']
+            missing_keys = [key for key in expected_keys if key not in dashboard_response]
+            if not missing_keys:
+                print(f"   ✅ Dashboard response contains all required keys: {expected_keys}")
+                
+                # Validate progress tracking response structure (changed 'progress_data' to 'progress_entries')
+                progress_entries = dashboard_response.get('progress_entries', [])
+                if progress_entries is not None:
+                    print(f"   ✅ Progress tracking structure validated: 'progress_entries' field present")
+                    if isinstance(progress_entries, list):
+                        print(f"   📈 Progress entries count: {len(progress_entries)}")
+                        if len(progress_entries) > 0:
+                            entry = progress_entries[0]
+                            entry_keys = ['patient_id', 'metric_type', 'value', 'trend_direction']
+                            missing_entry_keys = [key for key in entry_keys if key not in entry]
+                            if not missing_entry_keys:
+                                print(f"   ✅ Progress entry structure valid")
+                                print(f"   📊 Sample entry: {entry['patient_id']} - {entry['metric_type']}: {entry['value']} ({entry['trend_direction']})")
+                            else:
+                                print(f"   ❌ Progress entry missing keys: {missing_entry_keys}")
+                                success1 = False
+                    else:
+                        print(f"   ❌ Progress entries should be a list, got: {type(progress_entries)}")
+                        success1 = False
+                else:
+                    print(f"   ❌ Progress entries field missing")
+                    success1 = False
+                
+                # Validate dashboard metrics aggregation
+                dashboard_metrics = dashboard_response.get('dashboard_metrics', {})
+                if dashboard_metrics:
+                    metrics_keys = ['total_patients', 'active_assignments', 'high_risk_patients', 'avg_ai_match_score']
+                    missing_metrics_keys = [key for key in metrics_keys if key not in dashboard_metrics]
+                    if not missing_metrics_keys:
+                        print(f"   ✅ Dashboard metrics aggregation valid")
+                        print(f"   📊 Metrics Summary:")
+                        print(f"      Total Patients: {dashboard_metrics['total_patients']}")
+                        print(f"      Active Assignments: {dashboard_metrics['active_assignments']}")
+                        print(f"      High Risk Patients: {dashboard_metrics['high_risk_patients']}")
+                        print(f"      Avg AI Match Score: {dashboard_metrics['avg_ai_match_score']:.3f}")
+                    else:
+                        print(f"   ❌ Dashboard metrics missing keys: {missing_metrics_keys}")
+                        success1 = False
+                
+                # Validate recent assignments
+                recent_assignments = dashboard_response.get('recent_assignments', [])
+                if recent_assignments and len(recent_assignments) > 0:
+                    assignment = recent_assignments[0]
+                    assignment_keys = ['id', 'patient_id', 'ai_match_score', 'status', 'priority']
+                    missing_assignment_keys = [key for key in assignment_keys if key not in assignment]
+                    if not missing_assignment_keys:
+                        print(f"   ✅ Recent assignments structure valid - Found {len(recent_assignments)} assignments")
+                        print(f"   📋 Latest assignment: {assignment['patient_id']} (Score: {assignment['ai_match_score']}, Status: {assignment['status']})")
+                    else:
+                        print(f"   ❌ Recent assignment missing keys: {missing_assignment_keys}")
+                        success1 = False
+                
+                # Validate risk alerts
+                risk_alerts = dashboard_response.get('risk_alerts', [])
+                if risk_alerts and len(risk_alerts) > 0:
+                    alert = risk_alerts[0]
+                    alert_keys = ['patient_id', 'risk_category', 'risk_level', 'alert_message']
+                    missing_alert_keys = [key for key in alert_keys if key not in alert]
+                    if not missing_alert_keys:
+                        print(f"   ✅ Risk alerts structure valid - Found {len(risk_alerts)} alerts")
+                        print(f"   🚨 Latest alert: {alert['patient_id']} - {alert['risk_category']} ({alert['risk_level']})")
+                    else:
+                        print(f"   ❌ Risk alert missing keys: {missing_alert_keys}")
+                        success1 = False
+                else:
+                    print(f"   ℹ️ No risk alerts found (this is normal)")
+            else:
+                print(f"   ❌ Dashboard response missing keys: {missing_keys}")
+                success1 = False
+        
+        print(f"\n📊 Main Dashboard API Test Summary:")
+        print(f"   ✅ Provider dashboard with patient management data: {'PASS' if success1 else 'FAIL'}")
+        
+        return success1
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Health & Nutrition Platform API Tests")
