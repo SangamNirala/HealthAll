@@ -8392,6 +8392,10 @@ class HealthPlatformAPITester:
         print("\n📋 Testing Provider Healthcare Integration (Phase 2.5 Step 3)...")
         provider_integration_success = self.test_provider_healthcare_integration_endpoints()
 
+        # Test Patient Management System Endpoints (Phase 1A Re-testing) - PRIORITY TEST
+        print("\n📋 Testing Patient Management System Endpoints (Phase 1A Re-testing)...")
+        patient_management_success = self.test_patient_management_system_endpoints()
+
         # Print final results
         print("\n" + "=" * 60)
         print(f"📊 FINAL RESULTS")
