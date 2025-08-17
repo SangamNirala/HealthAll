@@ -3,7 +3,7 @@ from pymongo import IndexModel, ASCENDING, DESCENDING
 import os
 from typing import List, Optional, Dict, Any
 from models import Consultation, Message, ConsultationStatus
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
