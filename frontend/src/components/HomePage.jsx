@@ -4,20 +4,48 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { ArrowRight, Menu, User } from "lucide-react";
+import { ArrowRight, Menu, User, Loader2 } from "lucide-react";
+import { useConsultation } from "../hooks/useConsultation";
+import { useToast } from "../hooks/use-toast";
 
 const HomePage = () => {
   const [symptomInput, setSymptomInput] = useState("");
   const navigate = useNavigate();
+  const { createConsultation, isLoading } = useConsultation();
+  const { toast } = useToast();
 
-  const handleGetStarted = () => {
-    if (symptomInput.trim()) {
-      navigate("/chat", { state: { initialMessage: symptomInput } });
+  const handleGetStarted = async () => {
+    if (!symptomInput.trim()) {
+      toast({
+        title: "Please describe your symptoms",
+        description: "Enter some information about how you're feeling to get started.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const consultation = await createConsultation(symptomInput.trim());
+      
+      // Navigate to chat with consultation data
+      navigate("/chat", { 
+        state: { 
+          consultationId: consultation.consultation_id,
+          sessionToken: consultation.session_token,
+          initialMessage: symptomInput 
+        } 
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to start consultation",
+        description: "There was an error starting your consultation. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isLoading) {
       e.preventDefault();
       handleGetStarted();
     }
@@ -92,17 +120,27 @@ const HomePage = () => {
               placeholder="Ask me anything about your health"
               className="min-h-[120px] resize-none rounded-xl border-gray-300 pr-16 text-base"
               maxLength={1500}
+              disabled={isLoading}
             />
             <div className="absolute bottom-3 left-3 text-xs text-gray-400">
               {symptomInput.length} / 1500
             </div>
             <Button
               onClick={handleGetStarted}
-              disabled={!symptomInput.trim()}
-              className="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+              disabled={!symptomInput.trim() || isLoading}
+              className="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 disabled:opacity-50"
             >
-              <span>Get Started</span>
-              <ArrowRight className="h-4 w-4" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Starting...</span>
+                </>
+              ) : (
+                <>
+                  <span>Get Started</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </div>
           

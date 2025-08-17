@@ -5,19 +5,22 @@ import { Input } from "./ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Card, CardContent } from "./ui/card";
-import { ArrowUp, Menu, AlertTriangle } from "lucide-react";
-import { mockConversations } from "../mock/mockData";
+import { ArrowUp, Menu, AlertTriangle, Loader2 } from "lucide-react";
+import { useConsultation } from "../hooks/useConsultation";
+import { useToast } from "../hooks/use-toast";
 
 const ChatInterface = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([]);
+  const { messages, sendMessage, updateUserInfo, fetchConsultation, isLoading } = useConsultation();
   const [inputMessage, setInputMessage] = useState("");
   const [currentStep, setCurrentStep] = useState("initial");
   const [userInfo, setUserInfo] = useState({ age: "", sex: "" });
+  const [consultationId, setConsultationId] = useState(null);
+  const [sessionToken, setSessionToken] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [consultationStarted, setConsultationStarted] = useState(false);
   const messagesEndRef = useRef(null);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -28,117 +31,89 @@ const ChatInterface = () => {
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (location.state?.initialMessage) {
-      const initialMessage = location.state.initialMessage;
-      setMessages([
-        {
-          id: 1,
-          type: "user",
-          content: initialMessage,
-          timestamp: new Date(),
-        },
-      ]);
-      setConsultationStarted(true);
+    if (location.state?.consultationId) {
+      setConsultationId(location.state.consultationId);
+      setSessionToken(location.state.sessionToken);
       
-      // Simulate AI response
-      setTimeout(() => {
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          setMessages(prev => [...prev, {
-            id: 2,
-            type: "ai",
-            content: "Absolutely, I can help with that. Quick question - what's your age and biological sex? It helps me give you more relevant and personalized information.",
-            timestamp: new Date(),
-          }]);
-          setCurrentStep("collect_info");
-        }, 2000);
-      }, 1000);
-    }
-  }, [location.state]);
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-
-    const newMessage = {
-      id: messages.length + 1,
-      type: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setInputMessage("");
-    
-    // Handle different conversation steps
-    if (currentStep === "collect_info") {
-      handleUserInfoResponse(inputMessage);
-    } else if (currentStep === "symptom_analysis") {
-      handleSymptomAnalysis(inputMessage);
+      // Fetch existing conversation
+      fetchConsultation(location.state.consultationId);
     } else {
-      handleGeneralResponse(inputMessage);
+      // Redirect to home if no consultation
+      navigate("/");
     }
-  };
+  }, [location.state, fetchConsultation, navigate]);
 
-  const handleUserInfoResponse = (message) => {
-    // Extract age and sex from user input
-    const ageMatch = message.match(/(\d+)/);
-    const sexMatch = message.toLowerCase().match(/(male|female|man|woman)/);
-    
-    if (ageMatch || sexMatch) {
-      setUserInfo({
-        age: ageMatch ? ageMatch[1] : "",
-        sex: sexMatch ? (sexMatch[1].includes('m') ? 'male' : 'female') : ""
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !consultationId || isLoading) return;
+
+    const messageContent = inputMessage.trim();
+    setInputMessage("");
+    setIsTyping(true);
+
+    try {
+      await sendMessage(messageContent, consultationId);
+      
+      // Check if this was user info submission
+      if (currentStep === "collect_info" && (messageContent.includes("years old") || messageContent.includes("male") || messageContent.includes("female"))) {
+        setCurrentStep("symptom_analysis");
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to send message",
+        description: "There was an error sending your message. Please try again.",
+        variant: "destructive"
       });
+      console.error("Failed to send message:", error);
+    } finally {
+      setIsTyping(false);
     }
+  };
+
+  const handleUserInfoSubmit = async () => {
+    if (!userInfo.age || !userInfo.sex || !consultationId) return;
 
     setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: prev.length + 1,
-        type: "ai",
-        content: "Thank you for that information. Now, can you tell me more about your headaches? Specifically:\n\n• When did they start?\n• How would you rate the pain from 1-10?\n• Where exactly do you feel the pain?\n• Any other symptoms like nausea, sensitivity to light, or vision changes?",
-        timestamp: new Date(),
-      }]);
+    
+    try {
+      // Update user info in backend
+      await updateUserInfo(consultationId, {
+        age: parseInt(userInfo.age),
+        sex: userInfo.sex
+      });
+
+      // Send message with user info
+      const infoMessage = `I am ${userInfo.age} years old and ${userInfo.sex}`;
+      await sendMessage(infoMessage, consultationId);
+      
       setCurrentStep("symptom_analysis");
-    }, 2000);
-  };
-
-  const handleSymptomAnalysis = (message) => {
-    setIsTyping(true);
-    setTimeout(() => {
+    } catch (error) {
+      toast({
+        title: "Failed to submit information",
+        description: "There was an error submitting your information. Please try again.",
+        variant: "destructive"
+      });
+      console.error("Failed to submit user info:", error);
+    } finally {
       setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: prev.length + 1,
-        type: "ai",
-        content: "Based on your symptoms, here are the most likely conditions:\n\n**Tension Headache** (65% probability)\n• Most common type of headache\n• Often stress-related\n• Usually responds well to rest and over-the-counter pain relief\n\n**Migraine** (25% probability)\n• Can be triggered by various factors\n• May include nausea or light sensitivity\n• May require prescription medication\n\n**Dehydration Headache** (10% probability)\n• Often overlooked cause\n• Easily treatable with proper hydration\n\n**Recommendations:**\n✓ Stay well hydrated\n✓ Get adequate sleep\n✓ Try over-the-counter pain relief\n✓ Consider stress management techniques\n\n⚠️ **Seek immediate medical attention if you experience:**\n• Sudden, severe headache unlike any before\n• Headache with fever, stiff neck, or rash\n• Changes in vision or speech\n• Headache after head injury\n\nWould you like me to connect you with a licensed physician for a video consultation ($39)?",
-        timestamp: new Date(),
-      }]);
-      setCurrentStep("recommendations");
-    }, 3000);
+    }
   };
 
-  const handleGeneralResponse = (message) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const responses = [
-        "I understand your concern. Can you provide more details about your symptoms?",
-        "That's helpful information. Let me ask a few follow-up questions to better assist you.",
-        "Based on what you've shared, I'd like to gather a bit more information to provide the most accurate guidance."
-      ];
-      setMessages(prev => [...prev, {
-        id: prev.length + 1,
-        type: "ai",
-        content: responses[Math.floor(Math.random() * responses.length)],
-        timestamp: new Date(),
-      }]);
-    }, 1500);
-  };
-
-  const formatTime = (date) => {
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const detectUserInfoNeeded = () => {
+    // Check if AI is asking for user info in recent messages
+    const recentAIMessages = messages.filter(m => m.type === "ai").slice(-2);
+    return recentAIMessages.some(m => 
+      m.content.toLowerCase().includes("age") && 
+      m.content.toLowerCase().includes("sex")
+    );
+  };
+
+  const shouldShowUserInfoForm = () => {
+    return detectUserInfoNeeded() && !userInfo.age && !userInfo.sex && messages.length > 0;
   };
 
   return (
@@ -195,6 +170,13 @@ const ChatInterface = () => {
                   <div className="whitespace-pre-line text-sm leading-relaxed">
                     {message.content}
                   </div>
+                  
+                  {/* Show emergency warning if detected */}
+                  {message.metadata?.emergency_detected && (
+                    <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded text-red-800 text-xs">
+                      🚨 Emergency symptoms detected. Please seek immediate medical attention.
+                    </div>
+                  )}
                 </div>
                 {message.type === "ai" && (
                   <div className="mt-1 text-xs text-gray-500 px-2">
@@ -206,7 +188,7 @@ const ChatInterface = () => {
           ))}
           
           {/* Typing Indicator */}
-          {isTyping && (
+          {(isTyping || isLoading) && (
             <div className="flex justify-start">
               <div className="flex-shrink-0 mr-3">
                 <Avatar className="h-8 w-8">
@@ -215,17 +197,16 @@ const ChatInterface = () => {
                 </Avatar>
               </div>
               <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                <div className="flex items-center space-x-1">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-gray-600">Doctronic is thinking...</span>
                 </div>
               </div>
             </div>
           )}
           
-          {/* User Info Collection */}
-          {currentStep === "collect_info" && !isTyping && (
+          {/* User Info Collection Form */}
+          {shouldShowUserInfoForm() && !isLoading && (
             <div className="flex justify-start">
               <div className="flex-shrink-0 mr-3">
                 <Avatar className="h-8 w-8">
@@ -241,6 +222,9 @@ const ChatInterface = () => {
                       className="text-center"
                       value={userInfo.age}
                       onChange={(e) => setUserInfo({...userInfo, age: e.target.value})}
+                      type="number"
+                      min="18"
+                      max="120"
                     />
                     <div className="flex space-x-2">
                       <Button 
@@ -260,14 +244,17 @@ const ChatInterface = () => {
                     </div>
                     <Button 
                       className="w-full bg-blue-600 hover:bg-blue-700"
-                      disabled={!userInfo.age || !userInfo.sex}
-                      onClick={() => {
-                        const infoMessage = `I am ${userInfo.age} years old and ${userInfo.sex}`;
-                        setInputMessage(infoMessage);
-                        setTimeout(() => handleSendMessage(), 100);
-                      }}
+                      disabled={!userInfo.age || !userInfo.sex || isLoading}
+                      onClick={handleUserInfoSubmit}
                     >
-                      Submit
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit"
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -287,10 +274,11 @@ const ChatInterface = () => {
               <Input
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                 placeholder="Reply to Doctronic..."
                 className="pr-12 rounded-full border-gray-300 focus:border-blue-500"
                 maxLength={1500}
+                disabled={isLoading}
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">
                 {inputMessage.length}/1500
@@ -298,10 +286,14 @@ const ChatInterface = () => {
             </div>
             <Button 
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim()}
+              disabled={!inputMessage.trim() || isLoading}
               className="rounded-full bg-blue-600 hover:bg-blue-700 p-3"
             >
-              <ArrowUp className="h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
             </Button>
           </div>
           
