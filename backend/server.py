@@ -7,6 +7,10 @@ import logging
 import asyncio
 import re
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import our modules
 from models import *
