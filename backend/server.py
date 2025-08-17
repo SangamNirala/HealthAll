@@ -242,7 +242,7 @@ async def send_message(consultation_id: str, request: SendMessageRequest, backgr
                 )
                 
                 # Create detailed AI response
-                ai_content = self._format_medical_analysis_response(ai_response_data)
+                ai_content = _format_medical_analysis_response(ai_response_data)
                 
                 ai_response = Message(
                     consultation_id=consultation_id,
